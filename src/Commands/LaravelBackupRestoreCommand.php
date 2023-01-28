@@ -1,12 +1,12 @@
 <?php
 
-namespace VendorName\Skeleton\Commands;
+namespace Wnx\LaravelBackupRestore\Commands;
 
 use Illuminate\Console\Command;
 
-class SkeletonCommand extends Command
+class LaravelBackupRestoreCommand extends Command
 {
-    public $signature = 'skeleton';
+    public $signature = 'laravel-backup-restore';
 
     public $description = 'My command';
 
