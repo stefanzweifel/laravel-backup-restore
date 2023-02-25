@@ -13,7 +13,6 @@ it('downloads remote backup, imports a single mysql dump into mysql database', f
     $result = DB::connection('mysql')->table('users')->count();
 
     expect($result)->toBe(10);
-
 });
 
 it('downloads remote backup, decrypts and imports a single mysql dump into mysql database', function () {
@@ -39,7 +38,7 @@ it('downloads and decompresses remote backup, imports a single mysql dump into m
     $result = DB::connection('mysql')->table('users')->count();
 
     expect($result)->toBe(10);
-})->skip('TODO: Implement decompression');
+});
 
 it('downloads, decompresses remote backup, decrypts and imports a single mysql dump into mysql database', function () {
     $this->artisan(RestoreCommand::class, [
@@ -52,4 +51,4 @@ it('downloads, decompresses remote backup, decrypts and imports a single mysql d
     $result = DB::connection('mysql')->table('users')->count();
 
     expect($result)->toBe(10);
-})->skip('TODO: Implement decompression');
+});

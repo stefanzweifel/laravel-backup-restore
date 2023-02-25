@@ -40,9 +40,10 @@ class RestoreCommand extends Command
 
         $downloadBackupAction->execute($pendingRestore);
         $decompressBackupAction->execute($pendingRestore);
+
+        // TODO: Use different "import dump" action depending on database type
         $importMySqlDumpAction->execute($pendingRestore);
         $cleanupLocalBackupAction->execute($pendingRestore);
-
 
         return self::SUCCESS;
     }
