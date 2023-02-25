@@ -56,7 +56,7 @@ class TestCase extends Orchestra
         // Setup default filesystem disk where "remote" backups are stored
         $app['config']->set('filesystems.disks.remote', [
             'driver' => 'local',
-            'root' => __DIR__ . '/storage',
+            'root' => __DIR__.'/storage',
         ]);
 
         // Setup configuration for spatie/laravel-backup package that is relevant for this package
@@ -95,6 +95,4 @@ class TestCase extends Orchestra
         // config()->set('backup.backup.password', null);
         // config()->set('backup.backup.encryption', 'default');
     }
-
-
 }

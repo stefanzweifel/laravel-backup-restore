@@ -27,7 +27,7 @@ class PendingRestore
 
     public static function make(...$attributes): PendingRestore
     {
-        $restoreName = now()->format('Y-m-d-h-i-s') . '-' .  Str::ulid();
+        $restoreName = now()->format('Y-m-d-h-i-s').'-'.Str::ulid();
 
         $pathToStoreBackup = '';
 
@@ -60,7 +60,7 @@ class PendingRestore
 
         $filename = $this->restoreId;
 
-        return ("backup-restore-temp/$filename");
+        return "backup-restore-temp/$filename";
     }
 
     public function getAbsolutePathToLocalDecompressedBackup(): string
@@ -73,12 +73,12 @@ class PendingRestore
         return storage_path("app/backup-restore-temp/$filename");
     }
 
-
     // Experimental
 
     /**
      * Generate On-Demand Disk
      * https://laravel.com/docs/9.x/filesystem#on-demand-disks
+     *
      * @return \Illuminate\Contracts\Filesystem\Filesystem
      */
     public function getLocalRestoreDisk()

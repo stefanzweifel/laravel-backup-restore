@@ -11,7 +11,7 @@ class LocalLaravelBackupServiceProvider extends ServiceProvider
         // Setup default filesystem disk where "remote" backups are stored
         $this->app['config']->set('filesystems.disks.remote', [
             'driver' => 'local',
-            'root' => __DIR__ . '/../../tests/storage',
+            'root' => __DIR__.'/../../tests/storage',
         ]);
 
         // Setup configuration for spatie/laravel-backup package that is relevant for this package

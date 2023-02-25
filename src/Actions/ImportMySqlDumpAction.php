@@ -32,10 +32,8 @@ class ImportMySqlDumpAction
 
         // TODO: Loop over all available dumps and import them
 
-
         // Create Absolute Path
         $storagePathToDatabaseFile = Storage::disk($pendingRestore->restoreDisk)->path($dbDumps[0]);
-
 
         // TODO: Make path to mysql binary configurable
         $pathToMySqlBinary = '/Users/Shared/DBngin/mysql/8.0.19/bin/mysql';
@@ -97,8 +95,8 @@ class ImportMySqlDumpAction
             "'{$pathToMySqlBinary}'",
             "--defaults-extra-file=\"{$temporaryCredentialsFile}\"",
             $importToDatabase,
-            "<",
-            $storagePathToDatabaseFile
+            '<',
+            $storagePathToDatabaseFile,
         ])->implode(' ');
     }
 }

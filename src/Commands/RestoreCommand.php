@@ -22,8 +22,7 @@ class RestoreCommand extends Command
         DecompressBackupAction $decompressBackupAction,
         ImportMySqlDumpAction $importMySqlDumpAction,
         CleanupLocalBackupAction $cleanupLocalBackupAction
-    ): int
-    {
+    ): int {
         $destination = $this->getDestinationDiskToRestoreFrom();
         $backup = $this->getBackupToRestore($destination);
         $database = $this->option('database') ?? config('backup.backup.source.databases')[0];
@@ -76,7 +75,7 @@ class RestoreCommand extends Command
 
         $this->info("Fetch list of backups from {$disk} …");
         $listOfBackups = collect(Storage::disk($disk)->allFiles($name))
-            ->filter(fn( $file) => Str::endsWith($file, '.zip'));
+            ->filter(fn ($file) => Str::endsWith($file, '.zip'));
 
         if ($listOfBackups->count() === 0) {
             $this->error("No backups found on {$disk}.");
