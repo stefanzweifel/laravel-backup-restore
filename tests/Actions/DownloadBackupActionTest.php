@@ -10,7 +10,7 @@ test('it downloads backup from remote disk and stores it in local storage', func
     $pendingRestore = PendingRestore::make(
         disk: 'remote',
         backup: 'Laravel/2023-01-28-mysql-no-compression-no-encryption.zip',
-        connection: 'sqlite',
+        connection: 'mysql',
         backupPassword: 'password'
     );
 
@@ -19,5 +19,5 @@ test('it downloads backup from remote disk and stores it in local storage', func
 
     $downloadBackupAction->execute($pendingRestore);
 
-    expect(Storage::disk('local')->exists($pendingRestore->localBackupPath))->toBeTrue();
+    expect(Storage::disk('local')->exists($pendingRestore->getPathToLocalCompressedBackup()))->toBeTrue();
 });

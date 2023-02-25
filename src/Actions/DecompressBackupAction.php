@@ -22,7 +22,6 @@ class DecompressBackupAction
         $result = $zip->open($pathToFileToDecompress);
 
         if ($result === true) {
-
             if ($pendingRestore->backupPassword) {
                 $zip->setPassword($pendingRestore->backupPassword);
             }
