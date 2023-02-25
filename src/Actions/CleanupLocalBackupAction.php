@@ -1,0 +1,18 @@
+<?php
+
+namespace Wnx\LaravelBackupRestore\Actions;
+
+use Illuminate\Support\Facades\Storage;
+use Wnx\LaravelBackupRestore\PendingRestore;
+
+class CleanupLocalBackupAction
+{
+    public function execute(PendingRestore $pendingRestore)
+    {
+        Storage::disk($pendingRestore->restoreDisk)
+            ->delete($pendingRestore->getPathToLocalCompressedBackup());
+
+        Storage::disk($pendingRestore->restoreDisk)
+            ->deleteDirectory($pendingRestore->getPathToLocalDecompressedBackup());
+    }
+}
