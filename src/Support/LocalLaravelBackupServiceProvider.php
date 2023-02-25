@@ -17,6 +17,7 @@ class LocalLaravelBackupServiceProvider extends ServiceProvider
         // Setup configuration for spatie/laravel-backup package that is relevant for this package
         $this->app['config']->set('backup', [
             'backup' => [
+                'name' => env('APP_NAME', 'laravel-backup'),
                 'source' => [
                     'databases' => [
                         'mysql',

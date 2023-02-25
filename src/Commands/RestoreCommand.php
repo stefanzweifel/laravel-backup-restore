@@ -1,0 +1,100 @@
+<?php
+
+namespace Wnx\LaravelBackupRestore\Commands;
+
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Wnx\LaravelBackupRestore\Actions\CleanupLocalBackupAction;
+use Wnx\LaravelBackupRestore\Actions\DecompressBackupAction;
+use Wnx\LaravelBackupRestore\Actions\DownloadBackupAction;
+use Wnx\LaravelBackupRestore\Actions\ImportMySqlDumpAction;
+use Wnx\LaravelBackupRestore\PendingRestore;
+
+class RestoreCommand extends Command
+{
+    public $signature = 'backup:restore-db {--disk=} {--backup=} {--database=} {--password=}';
+
+    public $description = 'Restore a backup from a given disk.';
+
+    public function handle(
+        DownloadBackupAction $downloadBackupAction,
+        DecompressBackupAction $decompressBackupAction,
+        ImportMySqlDumpAction $importMySqlDumpAction,
+        CleanupLocalBackupAction $cleanupLocalBackupAction
+    ): int
+    {
+        $destination = $this->getDestinationDiskToRestoreFrom();
+        $backup = $this->getBackupToRestore($destination);
+        $database = $this->option('database') ?? config('backup.backup.source.databases')[0];
+
+        // Ask for password if backup is encrypted
+        // $password = $this->option('password') ?? $this->secret('What is the password?', null);
+
+        $pendingRestore = PendingRestore::make(
+            disk: $destination,
+            backup: $backup,
+            connection: $database,
+            backupPassword: $this->option('password'),
+        );
+
+        $downloadBackupAction->execute($pendingRestore);
+        $decompressBackupAction->execute($pendingRestore);
+        $importMySqlDumpAction->execute($pendingRestore);
+        $cleanupLocalBackupAction->execute($pendingRestore);
+
+
+        return self::SUCCESS;
+    }
+
+    private function getDestinationDiskToRestoreFrom(): string
+    {
+        // Use disk from --disk option if provided
+        if ($this->option('disk')) {
+            return $this->option('disk');
+        }
+
+        $availableDestinations = config('backup.backup.destination.disks');
+
+        // If there is only one disk configured, use it
+        if (count($availableDestinations) === 1) {
+            return $availableDestinations[0];
+        }
+
+        // Ask user to choose a disk
+        return $this->choice(
+            'From which disk should the backup be restored?',
+            $availableDestinations,
+            head($availableDestinations)
+        );
+    }
+
+    private function getBackupToRestore(string $disk): string
+    {
+        $name = config('backup.backup.name');
+
+        $this->info("Fetch list of backups from {$disk} …");
+
+        $listOfBackups = collect(Storage::disk($disk)->allFiles($name))
+            ->filter(fn( $file) => Str::endsWith($file, '.zip'));
+
+        if ($listOfBackups->count() === 0) {
+            $this->error("No backups found on {$disk}.");
+            exit(1);
+        }
+
+        if ($this->option('backup') === 'latest') {
+            return $listOfBackups->last();
+        }
+
+        if ($this->option('backup')) {
+            return $this->option('backup');
+        }
+
+        return $this->choice(
+            'Which backup should be restored?',
+            $listOfBackups->toArray(),
+            $listOfBackups->last()
+        );
+    }
+}
