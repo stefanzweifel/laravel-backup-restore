@@ -62,7 +62,7 @@ class TestCase extends Orchestra
         // Setup configuration for spatie/laravel-backup package that is relevant for this package
         $app['config']->set('backup', [
             'backup' => [
-                'name' => env('APP_NAME', 'laravel-backup'),
+                'name' => env('APP_NAME', 'Laravel'),
                 'source' => [
                     'databases' => [
                         'mysql',

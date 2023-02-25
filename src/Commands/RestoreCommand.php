@@ -75,12 +75,12 @@ class RestoreCommand extends Command
         $name = config('backup.backup.name');
 
         $this->info("Fetch list of backups from {$disk} …");
-
         $listOfBackups = collect(Storage::disk($disk)->allFiles($name))
             ->filter(fn( $file) => Str::endsWith($file, '.zip'));
 
         if ($listOfBackups->count() === 0) {
             $this->error("No backups found on {$disk}.");
+            // TODO: Throw an exception here
             exit(1);
         }
 
