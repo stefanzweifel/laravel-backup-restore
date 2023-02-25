@@ -20,6 +20,11 @@ jobs:
           - laravel: 9.*
             testbench: 7.*
             carbon: ^2.63
+
+    env:
+      DB_DATABASE: laravel_backup_restore
+      DB_USERNAME: root
+
     services:
       mysql:
         image: mysql:latest
