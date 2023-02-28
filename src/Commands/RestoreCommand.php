@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 use Wnx\LaravelBackupRestore\Actions\CleanupLocalBackupAction;
 use Wnx\LaravelBackupRestore\Actions\DecompressBackupAction;
 use Wnx\LaravelBackupRestore\Actions\DownloadBackupAction;
-use Wnx\LaravelBackupRestore\Actions\ImportMySqlDumpAction;
+use Wnx\LaravelBackupRestore\Actions\ImportDumpAction;
 use Wnx\LaravelBackupRestore\PendingRestore;
 
 class RestoreCommand extends Command
@@ -22,7 +22,7 @@ class RestoreCommand extends Command
     public function handle(
         DownloadBackupAction $downloadBackupAction,
         DecompressBackupAction $decompressBackupAction,
-        ImportMySqlDumpAction $importMySqlDumpAction,
+        ImportDumpAction $importMySqlDumpAction,
         CleanupLocalBackupAction $cleanupLocalBackupAction
     ): int {
         $destination = $this->getDestinationDiskToRestoreFrom();

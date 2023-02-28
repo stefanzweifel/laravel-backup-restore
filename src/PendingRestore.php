@@ -75,6 +75,18 @@ class PendingRestore
         return storage_path("app/backup-restore-temp/$filename");
     }
 
+    public function hasNoDbDumpsDirectory(): bool
+    {
+        return ! Storage::disk($this->restoreDisk)
+            ->has("{$this->getPathToLocalDecompressedBackup()}/db-dumps");
+    }
+
+    public function getAvailableDbDumps(): array
+    {
+        return Storage::disk($this->restoreDisk)
+            ->files("{$this->getPathToLocalDecompressedBackup()}/db-dumps");
+    }
+
     // Experimental
 
     /**

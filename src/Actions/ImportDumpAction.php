@@ -5,16 +5,11 @@ declare(strict_types=1);
 namespace Wnx\LaravelBackupRestore\Actions;
 
 use Illuminate\Support\Facades\Storage;
-use Wnx\LaravelBackupRestore\Databases\MySql;
+use Wnx\LaravelBackupRestore\DbImporterFactory;
 use Wnx\LaravelBackupRestore\PendingRestore;
 
-class ImportMySqlDumpAction
+class ImportDumpAction
 {
-    public function __construct(readonly public MySql $mySql)
-    {
-        //
-    }
-
     public function execute(PendingRestore $pendingRestore)
     {
         if ($pendingRestore->hasNoDbDumpsDirectory()) {
@@ -28,7 +23,8 @@ class ImportMySqlDumpAction
             // Create Absolute Path
             $storagePathToDatabaseFile = Storage::disk($pendingRestore->restoreDisk)->path($dbDump);
 
-            $this->mySql->importToDatabase($storagePathToDatabaseFile);
+            $importer = DbImporterFactory::createFromConnection($pendingRestore->connection);
+            $importer->importToDatabase($storagePathToDatabaseFile);
         }
     }
 }

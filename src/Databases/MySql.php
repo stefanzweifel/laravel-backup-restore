@@ -1,12 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Wnx\LaravelBackupRestore\Databases;
 
 use Spatie\Backup\Tasks\Backup\DbDumperFactory;
 use Spatie\TemporaryDirectory\TemporaryDirectory;
 use Symfony\Component\Process\Process;
 use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
-use Wnx\LaravelBackupRestore\PendingRestore;
 
 class MySql
 {
@@ -38,9 +39,9 @@ class MySql
         $importToDatabase = $dumper->getDbName();
         // $importToDatabase = $pendingRestore->database;
 
-        file_put_contents($this->temporaryDirectory->path('credentials.txt'), $dumper->getContentsOfCredentialsFile());
+        file_put_contents($this->temporaryDirectory->path('credentials.dat'), $dumper->getContentsOfCredentialsFile());
 
-        $temporaryCredentialsFile = $this->temporaryDirectory->path('credentials.txt');
+        $temporaryCredentialsFile = $this->temporaryDirectory->path('credentials.dat');
 
         $pathToZcatBinary = config('backup-restore.gunzip');
 

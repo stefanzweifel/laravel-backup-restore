@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Wnx\LaravelBackupRestore\Exceptions;
 
 use Symfony\Component\Process\Process;
