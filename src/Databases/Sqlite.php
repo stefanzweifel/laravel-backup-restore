@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Wnx\LaravelBackupRestore\Databases;
 
 use Symfony\Component\Process\Process;
+use Wnx\LaravelBackupRestore\DbImporter;
 use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 
-class Sqlite
+class Sqlite extends DbImporter
 {
     /**
      * @throws ImportFailed
@@ -34,12 +35,5 @@ class Sqlite
         $command = $this->getImportCommand($dumpFile);
 
         return Process::fromShellCommandline($command, null, null, null, 0);
-    }
-
-    private function checkIfImportWasSuccessful($process, string $dumpFile): void
-    {
-        if (! $process->isSuccessful()) {
-            throw ImportFailed::processDidNotEndSuccessfully($process);
-        }
     }
 }

@@ -24,7 +24,7 @@ class DbImporterFactory
         return static::forDriver($dbConnectionName);
     }
 
-    public static function forDriver(string $driver)
+    public static function forDriver(string $driver): DbImporter
     {
         $driver = Str::lower($driver);
 
