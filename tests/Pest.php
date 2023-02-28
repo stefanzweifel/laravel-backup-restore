@@ -15,11 +15,17 @@ uses(TestCase::class)
         artisan('db:wipe', [
             '--database' => 'mysql',
         ]);
+        artisan('db:wipe', [
+            '--database' => 'sqlite',
+        ]);
     })
     ->afterEach(function () {
         // Wipe all databases after each test
         artisan('db:wipe', [
             '--database' => 'mysql',
+        ]);
+        artisan('db:wipe', [
+            '--database' => 'sqlite',
         ]);
 
         // Delete all files in the temp directory
