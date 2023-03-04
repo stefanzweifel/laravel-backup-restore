@@ -21,10 +21,6 @@ jobs:
             testbench: 7.*
             carbon: ^2.63
 
-    env:
-      DB_DATABASE: laravel_backup_restore
-      DB_USERNAME: root
-
     services:
       mysql:
         image: mysql:latest
@@ -32,17 +28,17 @@ jobs:
           MYSQL_ALLOW_EMPTY_PASSWORD: true
           MYSQL_DATABASE: laravel_backup_restore
         ports:
-          - 3306/tcp
+          - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
       postgres:
         image: postgres:latest
         env:
-          POSTGRES_USER: root
+          POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: laravel_backup_restore
         ports:
-          - 5432/tcp
+          - 5432:5432
         options: --health-cmd="pg_isready" --health-interval=10s --health-timeout=5s --health-retries=3
 
     name: P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.stability }} - ${{ matrix.os }}
@@ -74,11 +70,11 @@ jobs:
       - name: Execute tests
         run: vendor/bin/pest
         env:
-          MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
+          MYSQL_PORT: 3306
           MYSQL_USERNAME: root
           MYSQL_PASSWORD: ''
           MYSQL_DATABASE: laravel_backup_restore
-          PGSQL_PORT: ${{ job.services.postgres.ports['5432'] }}
-          PGSQL_USERNAME: root
+          PGSQL_PORT: 5432
+          PGSQL_USERNAME: postgres
           PGSQL_PASSWORD: postgres
           PGSQL_DATABASE: laravel_backup_restore
