@@ -47,7 +47,7 @@ class MySql extends DbImporter
         $pathToZcatBinary = config('backup-restore.gunzip');
 
         // TODO: Make path to mysql binary configurable
-        $pathToMySqlBinary = '/Users/Shared/DBngin/mysql/8.0.19/bin/mysql';
+        $pathToMySqlBinary = 'mysql';
 
         // Build Shell Command to import a gzipped SQL file to a MySQL database
         if (str($pathToDump)->endsWith('gz')) {
