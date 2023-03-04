@@ -44,40 +44,35 @@ class MySql extends DbImporter
 
         $temporaryCredentialsFile = $this->temporaryDirectory->path('credentials.dat');
 
-        $pathToZcatBinary = config('backup-restore.gunzip');
-
-        // TODO: Make path to mysql binary configurable
-        $pathToMySqlBinary = 'mysql';
-
         // Build Shell Command to import a gzipped SQL file to a MySQL database
         if (str($pathToDump)->endsWith('gz')) {
-            $command = $this->getMySqlImportCommandForCompressedDump($pathToZcatBinary, $pathToDump, $pathToMySqlBinary, $temporaryCredentialsFile, $importToDatabase);
+            $command = $this->getMySqlImportCommandForCompressedDump($pathToDump, $temporaryCredentialsFile, $importToDatabase);
         } else {
-            $command = $this->getMySqlImportCommandForUncompressedDump($pathToMySqlBinary, $temporaryCredentialsFile, $importToDatabase, $pathToDump);
+            $command = $this->getMySqlImportCommandForUncompressedDump($temporaryCredentialsFile, $importToDatabase, $pathToDump);
         }
 
         return $command;
     }
 
-    private function getMySqlImportCommandForCompressedDump(string $pathToZcatBinary, string $storagePathToDatabaseFile, string $pathToMySqlBinary, mixed $temporaryCredentialsFile, string $importToDatabase): string
+    private function getMySqlImportCommandForCompressedDump(string $storagePathToDatabaseFile, mixed $temporaryCredentialsFile, string $importToDatabase): string
     {
         return collect([
             // zcat
             // "{$pathToZcatBinary} {$storagePathToDatabaseFile}",
 
             // gzip
-            "{$pathToZcatBinary} < {$storagePathToDatabaseFile}",
+            "gunzip < {$storagePathToDatabaseFile}",
             '|',
-            "'{$pathToMySqlBinary}'",
+            "mysql",
             "--defaults-extra-file=\"{$temporaryCredentialsFile}\"",
             $importToDatabase,
         ])->implode(' ');
     }
 
-    private function getMySqlImportCommandForUncompressedDump(string $pathToMySqlBinary, mixed $temporaryCredentialsFile, string $importToDatabase, string $storagePathToDatabaseFile): string
+    private function getMySqlImportCommandForUncompressedDump(mixed $temporaryCredentialsFile, string $importToDatabase, string $storagePathToDatabaseFile): string
     {
         return collect([
-            "'{$pathToMySqlBinary}'",
+            "mysql",
             "--defaults-extra-file=\"{$temporaryCredentialsFile}\"",
             $importToDatabase,
             '<',
