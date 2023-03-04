@@ -55,6 +55,15 @@ class TestCase extends Orchestra
             'password' => env('DB_PASSWORD', ''),
         ]);
 
+        $app['config']->set('database.connections.pgsql', [
+            'driver' => 'pgsql',
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '5432'),
+            'database' => 'laravel_backup_restore',
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+        ]);
+
         // Setup default filesystem disk where "remote" backups are stored
         $app['config']->set('filesystems.disks.remote', [
             'driver' => 'local',
