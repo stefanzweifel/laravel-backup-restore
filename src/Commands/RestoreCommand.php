@@ -20,9 +20,9 @@ class RestoreCommand extends Command
     public $description = 'Restore a backup from a given disk.';
 
     public function handle(
-        DownloadBackupAction $downloadBackupAction,
-        DecompressBackupAction $decompressBackupAction,
-        ImportDumpAction $importMySqlDumpAction,
+        DownloadBackupAction     $downloadBackupAction,
+        DecompressBackupAction   $decompressBackupAction,
+        ImportDumpAction         $importDumpAction,
         CleanupLocalBackupAction $cleanupLocalBackupAction
     ): int {
         $destination = $this->getDestinationDiskToRestoreFrom();
@@ -43,7 +43,7 @@ class RestoreCommand extends Command
         $decompressBackupAction->execute($pendingRestore);
 
         // TODO: Use different "import dump" action depending on database type
-        $importMySqlDumpAction->execute($pendingRestore);
+        $importDumpAction->execute($pendingRestore);
         $cleanupLocalBackupAction->execute($pendingRestore);
 
         return self::SUCCESS;
