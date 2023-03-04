@@ -39,8 +39,7 @@ jobs:
         image: postgres:latest
         env:
           POSTGRES_USER: root
-          POSTGRES_HOST_AUTH_METHOD: trust
-          POSTGRES_ALLOW_EMPTY_PASSWORD: true
+          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: laravel_backup_restore
         ports:
           - 5432/tcp
@@ -75,4 +74,12 @@ jobs:
       - name: Execute tests
         run: vendor/bin/pest
         env:
-          DB_PORT: ${{ job.services.mysql.ports['3306'] }}
+          MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
+          MYSQL_USERNAME: root
+          MYSQL_PASSWORD: ''
+          MYSQL_DATABASE: laravel_backup_restore
+          PGSQL_HOST: postgres
+          PGSQL_PORT: ${{ job.services.postgres.ports['5432'] }}
+          PGSQL_USERNAME: root
+          PGSQL_PASSWORD: postgres
+          PGSQL_DATABASE: laravel_backup_restore
