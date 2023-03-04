@@ -12,21 +12,15 @@ uses(TestCase::class)
         Storage::disk('local')->deleteDirectory('backup-restore-temp');
 
         // Wipe all databases before each test
-        artisan('db:wipe', [
-            '--database' => 'mysql',
-        ]);
-        artisan('db:wipe', [
-            '--database' => 'sqlite',
-        ]);
+        artisan('db:wipe', ['--database' => 'mysql']);
+        artisan('db:wipe', ['--database' => 'sqlite']);
+        artisan('db:wipe', ['--database' => 'pgsql']);
     })
     ->afterEach(function () {
         // Wipe all databases after each test
-        artisan('db:wipe', [
-            '--database' => 'mysql',
-        ]);
-        artisan('db:wipe', [
-            '--database' => 'sqlite',
-        ]);
+        artisan('db:wipe', ['--database' => 'mysql']);
+        artisan('db:wipe', ['--database' => 'sqlite']);
+        artisan('db:wipe', ['--database' => 'pgsql']);
 
         // Delete all files in the temp directory
         Storage::disk('local')->deleteDirectory('backup-restore-temp');

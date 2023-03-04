@@ -20,9 +20,9 @@ class RestoreCommand extends Command
     public $description = 'Restore a backup from a given disk.';
 
     public function handle(
-        DownloadBackupAction     $downloadBackupAction,
-        DecompressBackupAction   $decompressBackupAction,
-        ImportDumpAction         $importDumpAction,
+        DownloadBackupAction $downloadBackupAction,
+        DecompressBackupAction $decompressBackupAction,
+        ImportDumpAction $importDumpAction,
         CleanupLocalBackupAction $cleanupLocalBackupAction
     ): int {
         $destination = $this->getDestinationDiskToRestoreFrom();
