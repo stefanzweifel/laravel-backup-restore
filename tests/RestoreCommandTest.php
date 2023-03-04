@@ -56,14 +56,28 @@ it('downloads, decompresses remote backup, decrypts and imports a single mysql d
 });
 
 // sqlite
-it('restores database backup into sqlite database', function () {
+it('restores database backup into sqlite database', function (string $backup, ?string $password = null) {
     $this->artisan(RestoreCommand::class, [
         '--disk' => 'remote',
-        '--backup' => 'Laravel/2023-02-28-sqlite-no-compression-no-encryption.zip',
+        '--backup' => $backup,
         '--database' => 'sqlite',
+        '--password' => $password,
     ])->assertSuccessful();
 
     $result = DB::connection('sqlite')->table('users')->count();
 
     expect($result)->toBe(10);
-});
+})->with([
+    [
+        'backup' => 'Laravel/2023-02-28-sqlite-no-compression-no-encryption.zip',
+        'password' => null,
+    ],
+    [
+        'backup' => 'Laravel/2023-02-28-sqlite-compression-no-encryption.zip',
+        'password' => null,
+    ],
+    [
+        'backup' => 'Laravel/2023-02-28-sqlite-compression-encrypted.zip',
+        'password' => 'password',
+    ],
+]);
