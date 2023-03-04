@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Wnx\LaravelBackupRestore;
 
 use Illuminate\Support\Str;
-use Wnx\LaravelBackupRestore\Databases\MongoDb;
 use Wnx\LaravelBackupRestore\Databases\MySql;
 use Wnx\LaravelBackupRestore\Databases\PostgreSql;
 use Wnx\LaravelBackupRestore\Databases\Sqlite;
@@ -36,7 +35,6 @@ class DbImporterFactory
             'mysql' => new MySql(),
             'pgsql' => new PostgreSql(),
             'sqlite' => new Sqlite(),
-            'mongodb' => new MongoDb(),
             default => throw CannotCreateDbImporter::unsupportedDriver($driver),
         };
     }
