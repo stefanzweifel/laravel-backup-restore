@@ -39,6 +39,7 @@ jobs:
         image: postgres:latest
         env:
           POSTGRES_USER: root
+          POSTGRES_HOST_AUTH_METHOD: trust
           POSTGRES_ALLOW_EMPTY_PASSWORD: true
           POSTGRES_DB: laravel_backup_restore
         ports:
