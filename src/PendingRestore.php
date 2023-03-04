@@ -29,7 +29,7 @@ class PendingRestore
 
     public static function make(...$attributes): PendingRestore
     {
-        $restoreName = now()->format('Y-m-d-h-i-s').'-'.Str::ulid();
+        $restoreName = now()->format('Y-m-d-h-i-s').'-'.Str::uuid();
 
         $pathToStoreBackup = '';
 
