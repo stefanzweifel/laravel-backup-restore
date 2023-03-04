@@ -62,3 +62,32 @@ it('restores sqlite database', function (string $backup, ?string $password = nul
         'password' => 'password',
     ],
 ]);
+
+// pgsql
+it('restores pgsql database', function (string $backup, ?string $password = null) {
+    $this->artisan(RestoreCommand::class, [
+        '--disk' => 'remote',
+        '--backup' => $backup,
+        '--database' => 'pgsql',
+        '--password' => $password,
+    ])->assertSuccessful();
+
+    $result = DB::connection('pgsql')->table('users')->count();
+
+    expect($result)->toBe(10);
+})->with([
+    [
+        'backup' => 'Laravel/2023-03-04-pgsql-no-compression-no-encryption.zip',
+    ],
+    [
+        'backup' => 'Laravel/2023-03-04-pgsql-compression-no-encryption.zip',
+    ],
+    [
+        'backup' => 'Laravel/2023-03-04-pgsql-no-compression-encrypted.zip',
+        'password' => 'password',
+    ],
+    [
+        'backup' => 'Laravel/2023-03-04-pgsql-compression-encrypted.zip',
+        'password' => 'password',
+    ],
+])->skip('pqsql issue');
