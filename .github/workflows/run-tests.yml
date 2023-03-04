@@ -78,7 +78,6 @@ jobs:
           MYSQL_USERNAME: root
           MYSQL_PASSWORD: ''
           MYSQL_DATABASE: laravel_backup_restore
-          PGSQL_HOST: postgres
           PGSQL_PORT: ${{ job.services.postgres.ports['5432'] }}
           PGSQL_USERNAME: root
           PGSQL_PASSWORD: postgres
