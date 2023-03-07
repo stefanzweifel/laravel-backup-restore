@@ -32,11 +32,17 @@ class RestoreCommand extends Command
         // Ask for password if backup is encrypted
         // $password = $this->option('password') ?? $this->secret('What is the password?', null);
 
+        if ($this->option('password')) {
+            $password = $this->option('password');
+        } else {
+            $password = config('backup.backup.password');
+        }
+
         $pendingRestore = PendingRestore::make(
             disk: $destination,
             backup: $backup,
             connection: $connection,
-            backupPassword: $this->option('password'),
+            backupPassword: $password,
         );
 
         $downloadBackupAction->execute($pendingRestore);
