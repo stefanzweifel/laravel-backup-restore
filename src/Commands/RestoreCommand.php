@@ -45,11 +45,19 @@ class RestoreCommand extends Command
             backupPassword: $password,
         );
 
+        $this->info('Downloading backup …');
         $downloadBackupAction->execute($pendingRestore);
+
+        $this->info('Extracting database dump from backup …');
         $decompressBackupAction->execute($pendingRestore);
 
         // TODO: Use different "import dump" action depending on database type
+
+
+        $this->info('Importing database dump …');
         $importDumpAction->execute($pendingRestore);
+
+        $this->info('Cleaning up …');
         $cleanupLocalBackupAction->execute($pendingRestore);
 
         return self::SUCCESS;
