@@ -7,7 +7,6 @@ namespace Wnx\LaravelBackupRestore\Databases;
 use Spatie\Backup\Tasks\Backup\DbDumperFactory;
 use Spatie\TemporaryDirectory\TemporaryDirectory;
 use Symfony\Component\Process\Process;
-use Wnx\LaravelBackupRestore\DbImporter;
 use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 
 class MySql extends DbImporter

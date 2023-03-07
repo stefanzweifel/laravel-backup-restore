@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Wnx\LaravelBackupRestore;
 
 use Illuminate\Support\Str;
+use Wnx\LaravelBackupRestore\Databases\DbImporter;
 use Wnx\LaravelBackupRestore\Databases\MySql;
 use Wnx\LaravelBackupRestore\Databases\PostgreSql;
 use Wnx\LaravelBackupRestore\Databases\Sqlite;
@@ -14,7 +15,10 @@ class DbImporterFactory
 {
     protected static array $custom = [];
 
-    public static function createFromConnection(string $dbConnectionName)
+    /**
+     * @throws CannotCreateDbImporter
+     */
+    public static function createFromConnection(string $dbConnectionName): DbImporter
     {
         if (config("database.connections.{$dbConnectionName}") === null) {
             throw CannotCreateDbImporter::unsupportedDriver($dbConnectionName);
