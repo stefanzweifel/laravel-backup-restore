@@ -27,10 +27,10 @@ class ImportDumpAction
         /** @var array<int, string> $dbDumps */
         $dbDumps = $pendingRestore->getAvailableDbDumps();
 
-        consoleOutput()->info('Importing database ' . str('dump')->plural($dbDumps)->__toString() . ' …');
+        consoleOutput()->info('Importing database '.str('dump')->plural($dbDumps)->__toString().' …');
 
         foreach ($dbDumps as $dbDump) {
-            consoleOutput()->info("Importing ". str($dbDump)->afterLast('/')->__toString());
+            consoleOutput()->info('Importing '.str($dbDump)->afterLast('/')->__toString());
             $absolutePathToDump = Storage::disk($pendingRestore->restoreDisk)->path($dbDump);
             $importer->importToDatabase($absolutePathToDump);
         }

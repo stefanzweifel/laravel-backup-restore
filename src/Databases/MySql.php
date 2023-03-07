@@ -63,7 +63,7 @@ class MySql extends DbImporter
             // gzip
             "gunzip < {$storagePathToDatabaseFile}",
             '|',
-            "mysql",
+            'mysql',
             "--defaults-extra-file=\"{$temporaryCredentialsFile}\"",
             $importToDatabase,
         ])->implode(' ');
@@ -72,7 +72,7 @@ class MySql extends DbImporter
     private function getMySqlImportCommandForUncompressedDump(mixed $temporaryCredentialsFile, string $importToDatabase, string $storagePathToDatabaseFile): string
     {
         return collect([
-            "mysql",
+            'mysql',
             "--defaults-extra-file=\"{$temporaryCredentialsFile}\"",
             $importToDatabase,
             '<',
