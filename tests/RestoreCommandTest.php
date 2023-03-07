@@ -10,7 +10,7 @@ it('restores mysql database', function (string $backup, ?string $password = null
     $this->artisan(RestoreCommand::class, [
         '--disk' => 'remote',
         '--backup' => $backup,
-        '--database' => 'mysql',
+        '--connection' => 'mysql',
         '--password' => $password,
     ])->assertSuccessful();
 
@@ -39,7 +39,7 @@ it('restores sqlite database', function (string $backup, ?string $password = nul
     $this->artisan(RestoreCommand::class, [
         '--disk' => 'remote',
         '--backup' => $backup,
-        '--database' => 'sqlite',
+        '--connection' => 'sqlite',
         '--password' => $password,
     ])->assertSuccessful();
 
@@ -68,7 +68,7 @@ it('restores pgsql database', function (string $backup, ?string $password = null
     $this->artisan(RestoreCommand::class, [
         '--disk' => 'remote',
         '--backup' => $backup,
-        '--database' => 'pgsql',
+        '--connection' => 'pgsql',
         '--password' => $password,
     ])->assertSuccessful();
 
@@ -90,4 +90,4 @@ it('restores pgsql database', function (string $backup, ?string $password = null
         'backup' => 'Laravel/2023-03-04-pgsql-compression-encrypted.zip',
         'password' => 'password',
     ],
-])->skip('Fails on CI');
+]);

@@ -15,7 +15,7 @@ use Wnx\LaravelBackupRestore\PendingRestore;
 
 class RestoreCommand extends Command
 {
-    public $signature = 'backup:restore-db {--disk=} {--backup=} {--database=} {--password=}';
+    public $signature = 'backup:restore-db {--disk=} {--backup=} {--connection=} {--password=}';
 
     public $description = 'Restore a backup from a given disk.';
 
@@ -27,7 +27,7 @@ class RestoreCommand extends Command
     ): int {
         $destination = $this->getDestinationDiskToRestoreFrom();
         $backup = $this->getBackupToRestore($destination);
-        $database = $this->option('database') ?? config('backup.backup.source.databases')[0];
+        $connection = $this->option('connection') ?? config('backup.backup.source.databases')[0];
 
         // Ask for password if backup is encrypted
         // $password = $this->option('password') ?? $this->secret('What is the password?', null);
@@ -35,7 +35,7 @@ class RestoreCommand extends Command
         $pendingRestore = PendingRestore::make(
             disk: $destination,
             backup: $backup,
-            connection: $database,
+            connection: $connection,
             backupPassword: $this->option('password'),
         );
 
