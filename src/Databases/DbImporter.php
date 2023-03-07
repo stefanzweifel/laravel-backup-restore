@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Wnx\LaravelBackupRestore;
+namespace Wnx\LaravelBackupRestore\Databases;
 
 use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 
