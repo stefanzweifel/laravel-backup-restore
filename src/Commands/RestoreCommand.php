@@ -17,7 +17,7 @@ class RestoreCommand extends Command
 {
     public $signature = 'backup:restore-db {--disk=} {--backup=} {--connection=} {--password=}';
 
-    public $description = 'Restore a backup from a given disk.';
+    public $description = 'Restore a database backup dump from a given disk.';
 
     public function handle(
         DownloadBackupAction $downloadBackupAction,
