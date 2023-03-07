@@ -11,6 +11,8 @@ class DownloadBackupAction
 {
     public function execute(PendingRestore $pendingRestore)
     {
+        consoleOutput()->info('Downloading backup …');
+
         Storage::disk($pendingRestore->restoreDisk)
             ->writeStream(
                 $pendingRestore->getPathToLocalCompressedBackup(),

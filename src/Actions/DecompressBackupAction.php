@@ -21,6 +21,8 @@ class DecompressBackupAction
         $pathToFileToDecompress = Storage::disk($pendingRestore->restoreDisk)
                 ->path($pendingRestore->getPathToLocalCompressedBackup());
 
+        consoleOutput()->info('Extracting database dump from backup …');
+
         $result = $zip->open($pathToFileToDecompress);
 
         if ($result === true) {
