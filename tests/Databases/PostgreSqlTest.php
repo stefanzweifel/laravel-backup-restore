@@ -22,8 +22,9 @@ it('imports pgsql dump', function (string $dumpFile) {
 })->with([
     __DIR__.'/../storage/Laravel/2023-03-04-pgsql-no-compression-no-encryption.sql',
     __DIR__.'/../storage/Laravel/2023-03-04-pgsql-compression-no-encryption.sql.gz',
-]);
+])->group('pgsql');
 
 it('throws import failed exception if pgsql dump could not be imported')
     ->tap(fn () => app(PostgreSql::class)->importToDatabase('file-does-not-exist'))
-    ->throws(ImportFailed::class);
+    ->throws(ImportFailed::class)
+    ->group('pgsql');
