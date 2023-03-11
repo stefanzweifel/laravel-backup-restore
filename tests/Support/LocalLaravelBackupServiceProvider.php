@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Wnx\LaravelBackupRestore\Support;
+namespace Wnx\LaravelBackupRestore\Tests\Support;
 
 use Illuminate\Support\ServiceProvider;
 
