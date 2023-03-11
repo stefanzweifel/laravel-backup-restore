@@ -11,6 +11,9 @@ use Wnx\LaravelBackupRestore\Actions\CleanupLocalBackupAction;
 use Wnx\LaravelBackupRestore\Actions\DecompressBackupAction;
 use Wnx\LaravelBackupRestore\Actions\DownloadBackupAction;
 use Wnx\LaravelBackupRestore\Actions\ImportDumpAction;
+use Wnx\LaravelBackupRestore\Exceptions\CannotCreateDbImporter;
+use Wnx\LaravelBackupRestore\Exceptions\NoBackupsFound;
+use Wnx\LaravelBackupRestore\Exceptions\NoDatabaseDumpsFound;
 use Wnx\LaravelBackupRestore\PendingRestore;
 
 class RestoreCommand extends Command
@@ -19,6 +22,11 @@ class RestoreCommand extends Command
 
     public $description = 'Restore a database backup dump from a given disk.';
 
+    /**
+     * @throws NoDatabaseDumpsFound
+     * @throws NoBackupsFound
+     * @throws CannotCreateDbImporter
+     */
     public function handle(
         DownloadBackupAction $downloadBackupAction,
         DecompressBackupAction $decompressBackupAction,
@@ -79,6 +87,9 @@ class RestoreCommand extends Command
         );
     }
 
+    /**
+     * @throws NoBackupsFound
+     */
     private function getBackupToRestore(string $disk): string
     {
         $name = config('backup.backup.name');
@@ -89,8 +100,7 @@ class RestoreCommand extends Command
 
         if ($listOfBackups->count() === 0) {
             $this->error("No backups found on {$disk}.");
-            // TODO: Throw an exception here
-            exit(1);
+            throw NoBackupsFound::onDisk($disk);
         }
 
         if ($this->option('backup') === 'latest') {

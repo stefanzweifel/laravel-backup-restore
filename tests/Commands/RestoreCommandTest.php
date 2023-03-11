@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\DB;
 use Wnx\LaravelBackupRestore\Commands\RestoreCommand;
+use Wnx\LaravelBackupRestore\Exceptions\NoBackupsFound;
 
 // MySQL
 it('restores mysql database', function (string $backup, ?string $password = null) {
@@ -91,3 +92,11 @@ it('restores pgsql database', function (string $backup, ?string $password = null
         'password' => 'password',
     ],
 ])->group('pgsql');
+
+it('throws NoBackupsFound exception if no backups are found on given disk', function () {
+    $this->artisan(RestoreCommand::class, [
+        '--disk' => 'local',
+    ]);
+})
+    ->throws(NoBackupsFound::class)
+    ->expectExceptionMessage('No backups found on disk local.');
