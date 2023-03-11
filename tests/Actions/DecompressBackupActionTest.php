@@ -45,11 +45,13 @@ it('decompresses zip backup file that needs password do decrypt', function () {
 it('throws DecompressionFailed exception', function () {
     $pendingRestore = PendingRestore::make(
         disk: 'remote',
-        backup: 'Laravel/not-a-zip-file.txt',
+        backup: 'Laravel/not-a-zip-file.zip',
         connection: 'mysql',
         backupPassword: 'wrong-password',
     );
 
     app(DownloadBackupAction::class)->execute($pendingRestore);
     app(DecompressBackupAction::class)->execute($pendingRestore);
-})->throws(DecompressionFailed::class);
+})
+    ->throws(DecompressionFailed::class)
+    ->expectExceptionMessage('Not a zip archive. (ZipArchive::ER_NOZIP)');

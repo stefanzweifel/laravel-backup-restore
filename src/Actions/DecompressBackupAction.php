@@ -5,24 +5,25 @@ declare(strict_types=1);
 namespace Wnx\LaravelBackupRestore\Actions;
 
 use Illuminate\Support\Facades\Storage;
+use Wnx\LaravelBackupRestore\Exceptions\DecompressionFailed;
 use Wnx\LaravelBackupRestore\PendingRestore;
 use ZipArchive;
 
 class DecompressBackupAction
 {
-    public function execute(PendingRestore $pendingRestore)
+    /**
+     * @throws DecompressionFailed
+     */
+    public function execute(PendingRestore $pendingRestore): void
     {
-        // Decompress given backup to given local path
         $extractTo = $pendingRestore->getAbsolutePathToLocalDecompressedBackup();
-
-        // Unzip Backup File with Encryption Key
-        $zip = new ZipArchive;
 
         $pathToFileToDecompress = Storage::disk($pendingRestore->restoreDisk)
                 ->path($pendingRestore->getPathToLocalCompressedBackup());
 
         consoleOutput()->info('Extracting database dump from backup …');
 
+        $zip = new ZipArchive;
         $result = $zip->open($pathToFileToDecompress);
 
         if ($result === true) {
@@ -33,8 +34,7 @@ class DecompressBackupAction
             $zip->extractTo($extractTo);
             $zip->close();
         } else {
-            // TODO: Throw Exception
-            dd('Failed to unzip encrypted backup', $result, $pendingRestore);
+            throw DecompressionFailed::create($result, $pathToFileToDecompress);
         }
     }
 }
