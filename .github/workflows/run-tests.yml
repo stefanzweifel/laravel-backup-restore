@@ -28,7 +28,7 @@ jobs:
       mysql:
         image: mysql:latest
         env:
-          MYSQL_PASSWORD: password
+          MYSQL_ROOT_PASSWORD: password
           MYSQL_DATABASE: laravel_backup_restore
         ports:
           - 3306:3306
