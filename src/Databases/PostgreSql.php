@@ -4,26 +4,17 @@ declare(strict_types=1);
 
 namespace Wnx\LaravelBackupRestore\Databases;
 
+use Spatie\Backup\Exceptions\CannotCreateDbDumper;
 use Spatie\Backup\Tasks\Backup\DbDumperFactory;
-use Symfony\Component\Process\Process;
-use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 
 class PostgreSql extends DbImporter
 {
     /**
-     * @throws ImportFailed
+     * @throws CannotCreateDbDumper
      */
-    public function importToDatabase(string $dumpFile): void
-    {
-        $process = $this->getProcess($dumpFile);
-
-        $process->run();
-
-        $this->checkIfImportWasSuccessful($process, $dumpFile);
-    }
-
     public function getImportCommand(string $dumpFile): string
     {
+        /** @var \Spatie\DbDumper\Databases\PostgreSql $dumper */
         $dumper = DbDumperFactory::createFromConnection('pgsql');
         $dumper->getContentsOfCredentialsFile();
 
@@ -32,12 +23,5 @@ class PostgreSql extends DbImporter
         }
 
         return 'psql -U '.config('database.connections.pgsql.username').' -d '.config('database.connections.pgsql.database').' < '.$dumpFile;
-    }
-
-    private function getProcess(string $dumpFile): Process
-    {
-        $command = $this->getImportCommand($dumpFile);
-
-        return Process::fromShellCommandline($command, null, null, null, 0);
     }
 }

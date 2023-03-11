@@ -10,6 +10,8 @@ use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 
 abstract class DbImporter
 {
+    abstract public function getImportCommand(string $dumpFile): string;
+
     /**
      * @throws ImportFailed
      */
@@ -22,5 +24,22 @@ abstract class DbImporter
         event(new DatabaseDumpImportWasSuccessful($dumpFile));
     }
 
-    abstract public function importToDatabase(string $dumpFile): void;
+    /**
+     * @throws ImportFailed
+     */
+    public function importToDatabase(string $dumpFile): void
+    {
+        $process = $this->getProcess($dumpFile);
+
+        $process->run();
+
+        $this->checkIfImportWasSuccessful($process, $dumpFile);
+    }
+
+    protected function getProcess(string $dumpFile): Process
+    {
+        $command = $this->getImportCommand($dumpFile);
+
+        return Process::fromShellCommandline($command, null, null, null, 0);
+    }
 }
