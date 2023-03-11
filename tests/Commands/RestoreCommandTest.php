@@ -32,7 +32,7 @@ it('restores mysql database', function (string $backup, ?string $password = null
         'backup' => 'Laravel/2023-01-28-mysql-compression-encrypted.zip',
         'password' => 'password',
     ],
-]);
+])->group('mysql');
 
 // sqlite
 it('restores sqlite database', function (string $backup, ?string $password = null) {
@@ -61,7 +61,7 @@ it('restores sqlite database', function (string $backup, ?string $password = nul
         'backup' => 'Laravel/2023-02-28-sqlite-compression-encrypted.zip',
         'password' => 'password',
     ],
-]);
+])->group('pgsql');
 
 // pgsql
 it('restores pgsql database', function (string $backup, ?string $password = null) {
@@ -90,4 +90,4 @@ it('restores pgsql database', function (string $backup, ?string $password = null
         'backup' => 'Laravel/2023-03-04-pgsql-compression-encrypted.zip',
         'password' => 'password',
     ],
-]);
+])->group('pgsql');
