@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Wnx\LaravelBackupRestore\Tests;
 
-use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Wnx\LaravelBackupRestore\LaravelBackupRestoreServiceProvider;
 
