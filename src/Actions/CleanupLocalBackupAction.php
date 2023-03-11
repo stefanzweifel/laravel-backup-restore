@@ -9,7 +9,7 @@ use Wnx\LaravelBackupRestore\PendingRestore;
 
 class CleanupLocalBackupAction
 {
-    public function execute(PendingRestore $pendingRestore)
+    public function execute(PendingRestore $pendingRestore): void
     {
         Storage::disk($pendingRestore->restoreDisk)
             ->delete($pendingRestore->getPathToLocalCompressedBackup());

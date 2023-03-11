@@ -12,6 +12,7 @@ use Wnx\LaravelBackupRestore\Actions\DecompressBackupAction;
 use Wnx\LaravelBackupRestore\Actions\DownloadBackupAction;
 use Wnx\LaravelBackupRestore\Actions\ImportDumpAction;
 use Wnx\LaravelBackupRestore\Exceptions\CannotCreateDbImporter;
+use Wnx\LaravelBackupRestore\Exceptions\DecompressionFailed;
 use Wnx\LaravelBackupRestore\Exceptions\NoBackupsFound;
 use Wnx\LaravelBackupRestore\Exceptions\NoDatabaseDumpsFound;
 use Wnx\LaravelBackupRestore\PendingRestore;
@@ -26,6 +27,7 @@ class RestoreCommand extends Command
      * @throws NoDatabaseDumpsFound
      * @throws NoBackupsFound
      * @throws CannotCreateDbImporter
+     * @throws DecompressionFailed
      */
     public function handle(
         DownloadBackupAction $downloadBackupAction,
@@ -94,12 +96,14 @@ class RestoreCommand extends Command
     {
         $name = config('backup.backup.name');
 
-        $this->info("Fetch list of backups from {$disk} …");
+        $this->info("Fetch list of backups from $disk …");
         $listOfBackups = collect(Storage::disk($disk)->allFiles($name))
             ->filter(fn ($file) => Str::endsWith($file, '.zip'));
 
         if ($listOfBackups->count() === 0) {
-            $this->error("No backups found on {$disk}.");
+            if (isset($disk)) {
+                $this->error("No backups found on {$disk}.");
+            }
             throw NoBackupsFound::onDisk($disk);
         }
 

@@ -9,7 +9,7 @@ use Wnx\LaravelBackupRestore\PendingRestore;
 
 class DownloadBackupAction
 {
-    public function execute(PendingRestore $pendingRestore)
+    public function execute(PendingRestore $pendingRestore): void
     {
         consoleOutput()->info('Downloading backup …');
 

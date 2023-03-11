@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Wnx\LaravelBackupRestore\Exceptions;
 
+use Exception;
 use Symfony\Component\Process\Process;
 
-class ImportFailed extends \Exception
+class ImportFailed extends Exception
 {
     public static function processDidNotEndSuccessfully(Process $process): static
     {

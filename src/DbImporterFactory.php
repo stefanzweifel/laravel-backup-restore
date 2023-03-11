@@ -20,7 +20,7 @@ class DbImporterFactory
      */
     public static function createFromConnection(string $dbConnectionName): DbImporter
     {
-        if (config("database.connections.{$dbConnectionName}") === null) {
+        if (config("database.connections.$dbConnectionName") === null) {
             throw CannotCreateDbImporter::unsupportedDriver($dbConnectionName);
         }
 

@@ -25,7 +25,7 @@ class MySql extends DbImporter
         $this->checkIfImportWasSuccessful($process, $dumpFile);
     }
 
-    public function getImportCommand(string $pathToDump)
+    public function getImportCommand(string $pathToDump): string
     {
         $temporaryDirectoryPath = config('backup.backup.temporary_directory') ?? storage_path('app/backup-temp');
 

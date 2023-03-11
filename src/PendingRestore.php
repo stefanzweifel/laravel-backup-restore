@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Wnx\LaravelBackupRestore;
 
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use SensitiveParameter;
 
 class PendingRestore
 {
@@ -15,7 +17,7 @@ class PendingRestore
         readonly public string $connection,
         readonly public string $restoreId,
         readonly public string $restoreName,
-        #[\SensitiveParameter] readonly public ?string $backupPassword = null,
+        #[SensitiveParameter] readonly public ?string $backupPassword = null,
         readonly public string $restoreDisk = 'local',
         // public string $pathToLocalRestore = '',
         // public string $pathToLocalBackup = '',
@@ -50,7 +52,7 @@ class PendingRestore
         // TODO: Incorporate temp directory of config into path.
         // config('backup-restore.temporary_directory');
 
-        $filename = "{$this->restoreId}.{$this->getFileExtensionOfRemoteBackup()}";
+        $filename = "$this->restoreId.{$this->getFileExtensionOfRemoteBackup()}";
 
         return "backup-restore-temp/$filename";
     }
@@ -92,10 +94,8 @@ class PendingRestore
     /**
      * Generate On-Demand Disk
      * https://laravel.com/docs/9.x/filesystem#on-demand-disks
-     *
-     * @return \Illuminate\Contracts\Filesystem\Filesystem
      */
-    public function getLocalRestoreDisk()
+    public function getLocalRestoreDisk(): Filesystem
     {
         return Storage::build([
             'driver' => 'local',
