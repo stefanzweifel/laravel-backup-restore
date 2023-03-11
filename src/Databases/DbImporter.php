@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Wnx\LaravelBackupRestore\Databases;
 
+use Wnx\LaravelBackupRestore\Events\DatabaseDumpImportWasSuccessful;
 use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 
 abstract class DbImporter
@@ -13,5 +14,7 @@ abstract class DbImporter
         if (! $process->isSuccessful()) {
             throw ImportFailed::processDidNotEndSuccessfully($process);
         }
+
+        event(new DatabaseDumpImportWasSuccessful($dumpFile));
     }
 }

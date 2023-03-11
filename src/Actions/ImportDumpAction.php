@@ -6,6 +6,7 @@ namespace Wnx\LaravelBackupRestore\Actions;
 
 use Illuminate\Support\Facades\Storage;
 use Wnx\LaravelBackupRestore\DbImporterFactory;
+use Wnx\LaravelBackupRestore\Events\DatabaseRestored;
 use Wnx\LaravelBackupRestore\Exceptions\CannotCreateDbImporter;
 use Wnx\LaravelBackupRestore\Exceptions\NoDatabaseDumpsFound;
 use Wnx\LaravelBackupRestore\PendingRestore;
@@ -34,5 +35,7 @@ class ImportDumpAction
             $absolutePathToDump = Storage::disk($pendingRestore->restoreDisk)->path($dbDump);
             $importer->importToDatabase($absolutePathToDump);
         }
+
+        event(new DatabaseRestored($pendingRestore));
     }
 }
