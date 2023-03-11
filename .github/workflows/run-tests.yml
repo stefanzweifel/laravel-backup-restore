@@ -45,6 +45,8 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo
+          ini-values: pcov.directory=src
+          coverage: pcov
 
       - name: Setup problem matchers
         run: |
@@ -60,7 +62,7 @@ jobs:
         run: composer show -D
 
       - name: Execute tests
-        run: vendor/bin/pest --exclude-group=pgsql
+        run: vendor/bin/pest --exclude-group=pgsql --coverage
         env:
           MYSQL_PORT: 3306
           MYSQL_USERNAME: root
