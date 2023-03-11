@@ -14,11 +14,14 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         php: [8.2, 8.1]
-        laravel: [9.*]
+        laravel: [9.*, 10.*]
         stability: [prefer-lowest, prefer-stable]
         include:
           - laravel: 9.*
             testbench: 7.*
+            carbon: ^2.63
+          - laravel: 10.*
+            testbench: 8.*
             carbon: ^2.63
 
     services:
@@ -30,20 +33,6 @@ jobs:
         ports:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
-
-#      postgres:
-#        image: postgres:latest
-#        env:
-#          POSTGRES_USER: postgres
-#          POSTGRES_PASSWORD: postgres
-#          POSTGRES_DB: laravel_backup_restore
-#        ports:
-#          - 5432:5432
-#        options: >-
-#          --health-cmd pg_isready
-#          --health-interval 10s
-#          --health-timeout 5s
-#          --health-retries 5
 
     name: P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.stability }} - ${{ matrix.os }}
 
