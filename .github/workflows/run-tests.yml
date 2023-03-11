@@ -28,7 +28,7 @@ jobs:
       mysql:
         image: mysql:latest
         env:
-          MYSQL_ALLOW_EMPTY_PASSWORD: true
+          MYSQL_PASSWORD: password
           MYSQL_DATABASE: laravel_backup_restore
         ports:
           - 3306:3306
@@ -69,7 +69,7 @@ jobs:
         env:
           MYSQL_PORT: 3306
           MYSQL_USERNAME: root
-          MYSQL_PASSWORD: ''
+          MYSQL_PASSWORD: 'password'
           MYSQL_DATABASE: laravel_backup_restore
           PGSQL_HOST: localhost
           PGSQL_PORT: 5432
