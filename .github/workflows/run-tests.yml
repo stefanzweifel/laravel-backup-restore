@@ -61,6 +61,9 @@ jobs:
       - name: List Installed Dependencies
         run: composer show -D
 
+      - name: Create sqlite database
+        run: touch database/database.sqlite
+
       - name: Execute tests
         run: vendor/bin/pest --exclude-group=pgsql --coverage
         env:
