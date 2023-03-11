@@ -39,7 +39,11 @@ jobs:
           POSTGRES_DB: laravel_backup_restore
         ports:
           - 5432:5432
-        options: --health-cmd="pg_isready" --health-interval=10s --health-timeout=5s --health-retries=3
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     name: P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.stability }} - ${{ matrix.os }}
 
@@ -67,9 +71,6 @@ jobs:
       - name: List Installed Dependencies
         run: composer show -D
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-
       - name: Execute tests
         run: vendor/bin/pest
         env:
@@ -77,6 +78,7 @@ jobs:
           MYSQL_USERNAME: root
           MYSQL_PASSWORD: ''
           MYSQL_DATABASE: laravel_backup_restore
+          PGSQL_HOST: localhost
           PGSQL_PORT: 5432
           PGSQL_USERNAME: postgres
           PGSQL_PASSWORD: postgres
