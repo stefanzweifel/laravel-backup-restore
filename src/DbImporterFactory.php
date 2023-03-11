@@ -30,7 +30,7 @@ class DbImporterFactory
     /**
      * @throws CannotCreateDbImporter
      */
-    public static function forDriver(string $driver): DbImporter
+    protected static function forDriver(string $driver): DbImporter
     {
         $driver = Str::lower($driver);
 

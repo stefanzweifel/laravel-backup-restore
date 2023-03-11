@@ -10,6 +10,6 @@ class CannotCreateDbImporter extends Exception
 {
     public static function unsupportedDriver(string $driver): self
     {
-        return new static("Cannot create a importer for db driver `$driver`. Use `mysql`, `pgsql`, `mongodb` or `sqlite`.");
+        return new static("Cannot create a importer for database driver `$driver`. Use `mysql`, `pgsql` or `sqlite`.");
     }
 }

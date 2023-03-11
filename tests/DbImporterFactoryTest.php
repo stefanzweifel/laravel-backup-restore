@@ -6,7 +6,7 @@ use Wnx\LaravelBackupRestore\DbImporterFactory;
 use Wnx\LaravelBackupRestore\Exceptions\CannotCreateDbImporter;
 
 it('returns db importer instances for given database driver', function ($driver, $expectedClass) {
-    expect(DbImporterFactory::forDriver($driver))->toBeInstanceOf($expectedClass);
+    expect(DbImporterFactory::createFromConnection($driver))->toBeInstanceOf($expectedClass);
 })->with([
     [
         'driver' => 'mysql',
@@ -21,10 +21,6 @@ it('returns db importer instances for given database driver', function ($driver,
         'expected' => \Wnx\LaravelBackupRestore\Databases\PostgreSql::class,
     ],
 ]);
-
-it('throws exception if no db importer instance can be created for unsupported driver')
-    ->tap(fn () => DbImporterFactory::forDriver('unsupported'))
-    ->throws(CannotCreateDbImporter::class);
 
 it('throws exception if no db importer instance can be created for connection')
     ->tap(fn () => DbImporterFactory::createFromConnection('unsupported'))
