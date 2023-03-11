@@ -3,8 +3,9 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Storage;
-use Wnx\LaravelBackupRestore\Actions\DecompressBackupAction as DecompressBackupActionAlias;
+use Wnx\LaravelBackupRestore\Actions\DecompressBackupAction;
 use Wnx\LaravelBackupRestore\Actions\DownloadBackupAction;
+use Wnx\LaravelBackupRestore\Exceptions\DecompressionFailed;
 use Wnx\LaravelBackupRestore\PendingRestore;
 
 it('decompresses zip backup file without password', function () {
@@ -20,11 +21,11 @@ it('decompresses zip backup file without password', function () {
     Storage::assertExists($pendingRestore->getPathToLocalCompressedBackup());
 
     Storage::assertMissing($pendingRestore->getPathToLocalDecompressedBackup());
-    app(DecompressBackupActionAlias::class)->execute($pendingRestore);
+    app(DecompressBackupAction::class)->execute($pendingRestore);
     Storage::assertExists($pendingRestore->getPathToLocalDecompressedBackup());
 });
 
-test('decompresses zip backup file that needs password do decrypt', function () {
+it('decompresses zip backup file that needs password do decrypt', function () {
     $pendingRestore = PendingRestore::make(
         disk: 'remote',
         backup: 'Laravel/2023-01-28-mysql-no-compression-encrypted.zip',
@@ -37,6 +38,18 @@ test('decompresses zip backup file that needs password do decrypt', function () 
     Storage::assertExists($pendingRestore->getPathToLocalCompressedBackup());
 
     Storage::assertMissing($pendingRestore->getPathToLocalDecompressedBackup());
-    app(DecompressBackupActionAlias::class)->execute($pendingRestore);
+    app(DecompressBackupAction::class)->execute($pendingRestore);
     Storage::assertExists($pendingRestore->getPathToLocalDecompressedBackup());
 });
+
+it('throws DecompressionFailed exception', function () {
+    $pendingRestore = PendingRestore::make(
+        disk: 'remote',
+        backup: 'Laravel/not-a-zip-file.txt',
+        connection: 'mysql',
+        backupPassword: 'wrong-password',
+    );
+
+    app(DownloadBackupAction::class)->execute($pendingRestore);
+    app(DecompressBackupAction::class)->execute($pendingRestore);
+})->throws(DecompressionFailed::class);

@@ -25,3 +25,7 @@ it('returns db importer instances for given database driver', function ($driver,
 it('throws exception if no db importer instance can be created for unsupported driver')
     ->tap(fn () => DbImporterFactory::forDriver('unsupported'))
     ->throws(CannotCreateDbImporter::class);
+
+it('throws exception if no db importer instance can be created for connection')
+    ->tap(fn () => DbImporterFactory::createFromConnection('unsupported'))
+    ->throws(CannotCreateDbImporter::class);
