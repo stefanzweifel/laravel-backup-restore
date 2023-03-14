@@ -10,6 +10,7 @@ use ZipArchive;
 class DecompressionFailed extends Exception
 {
     public static array $errorCodeToMessage = [
+        false => 'The file %filename% can\'t be opened.',
         ZipArchive::ER_EXISTS => 'The file %filename% already exists. (ZipArchive::ER_EXISTS)',
         ZipArchive::ER_INCONS => 'The zip archive is inconsistent. (ZipArchive::ER_INCONS)',
         ZipArchive::ER_INVAL => 'Invalid argument. (ZipArchive::ER_INVAL)',

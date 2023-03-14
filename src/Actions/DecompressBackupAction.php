@@ -31,8 +31,12 @@ class DecompressBackupAction
                 $zip->setPassword($pendingRestore->backupPassword);
             }
 
-            $zip->extractTo($extractTo);
+            $extractionResult = $zip->extractTo($extractTo);
             $zip->close();
+
+            if ($extractionResult === false) {
+                throw DecompressionFailed::create($extractionResult, $pathToFileToDecompress);
+            }
         } else {
             throw DecompressionFailed::create($result, $pathToFileToDecompress);
         }

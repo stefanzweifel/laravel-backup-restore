@@ -55,3 +55,17 @@ it('throws DecompressionFailed exception', function () {
 })
     ->throws(DecompressionFailed::class)
     ->expectExceptionMessage('Not a zip archive. (ZipArchive::ER_NOZIP)');
+
+it('throws exception if backup password is wrong', function () {
+    $pendingRestore = PendingRestore::make(
+        disk: 'remote',
+        backup: 'Laravel/2023-01-28-mysql-no-compression-encrypted.zip',
+        connection: 'mysql',
+        backupPassword: 'wrong-password',
+    );
+
+    app(DownloadBackupAction::class)->execute($pendingRestore);
+    app(DecompressBackupAction::class)->execute($pendingRestore);
+    Storage::assertMissing($pendingRestore->getPathToLocalDecompressedBackup());
+})
+    ->throws(DecompressionFailed::class);
