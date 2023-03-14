@@ -19,12 +19,6 @@ class PendingRestore
         readonly public string $restoreName,
         #[SensitiveParameter] readonly public ?string $backupPassword = null,
         readonly public string $restoreDisk = 'local',
-        // public string $pathToLocalRestore = '',
-        // public string $pathToLocalBackup = '',
-        // public string $pathToDecompressedBackup = '',
-
-        // TODO
-        // Absolute path to unzipped backup
     ) {
         //
     }
@@ -32,8 +26,6 @@ class PendingRestore
     public static function make(...$attributes): PendingRestore
     {
         $restoreName = now()->format('Y-m-d-h-i-s').'-'.Str::uuid();
-
-        $pathToStoreBackup = '';
 
         return new self(
             ...$attributes,
@@ -49,9 +41,6 @@ class PendingRestore
 
     public function getPathToLocalCompressedBackup(): string
     {
-        // TODO: Incorporate temp directory of config into path.
-        // config('backup-restore.temporary_directory');
-
         $filename = "$this->restoreId.{$this->getFileExtensionOfRemoteBackup()}";
 
         return "backup-restore-temp/$filename";
@@ -59,9 +48,6 @@ class PendingRestore
 
     public function getPathToLocalDecompressedBackup(): string
     {
-        // TODO: Incorporate temp directory of config into path.
-        // config('backup-restore.temporary_directory');
-
         $filename = $this->restoreId;
 
         return "backup-restore-temp/$filename";
@@ -69,9 +55,6 @@ class PendingRestore
 
     public function getAbsolutePathToLocalDecompressedBackup(): string
     {
-        // TODO: Incorporate temp directory of config into path.
-        // config('backup-restore.temporary_directory');
-
         $filename = $this->restoreId;
 
         return storage_path("app/backup-restore-temp/$filename");
@@ -87,19 +70,5 @@ class PendingRestore
     {
         return Storage::disk($this->restoreDisk)
             ->files("{$this->getPathToLocalDecompressedBackup()}/db-dumps");
-    }
-
-    // Experimental
-
-    /**
-     * Generate On-Demand Disk
-     * https://laravel.com/docs/9.x/filesystem#on-demand-disks
-     */
-    public function getLocalRestoreDisk(): Filesystem
-    {
-        return Storage::build([
-            'driver' => 'local',
-            'root' => storage_path('app/backup-restore-temp'),
-        ]);
     }
 }
