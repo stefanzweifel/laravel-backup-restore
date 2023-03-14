@@ -19,9 +19,13 @@ use Wnx\LaravelBackupRestore\PendingRestore;
 
 class RestoreCommand extends Command
 {
-    public $signature = 'backup:restore-db {--disk=} {--backup=} {--connection=} {--password=}';
+    public $signature = 'backup:restore
+                        {--disk= : The disk from where to restore the backup from. Defaults to the first disk in config/backup.php.}
+                        {--backup= : The backup to restore. Defaults to the latest backup.}
+                        {--connection= : The database connection to restore the backup to. Defaults to the first connection in config/backup.php.}
+                        {--password= : The password to decrypt the backup.}';
 
-    public $description = 'Restore a database backup dump from a given disk.';
+    public $description = 'Restore a database backup dump from a given disk to a database connection.';
 
     /**
      * @throws NoDatabaseDumpsFound
