@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Wnx\LaravelBackupRestore;
 
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use SensitiveParameter;
