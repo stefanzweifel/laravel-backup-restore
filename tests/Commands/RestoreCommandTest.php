@@ -13,6 +13,7 @@ it('restores mysql database', function (string $backup, ?string $password = null
         '--backup' => $backup,
         '--connection' => 'mysql',
         '--password' => $password,
+        '--no-interaction' => true,
     ])->assertSuccessful();
 
     $result = DB::connection('mysql')->table('users')->count();
@@ -42,6 +43,7 @@ it('restores sqlite database', function (string $backup, ?string $password = nul
         '--backup' => $backup,
         '--connection' => 'sqlite',
         '--password' => $password,
+        '--no-interaction' => true,
     ])->assertSuccessful();
 
     $result = DB::connection('sqlite')->table('users')->count();
@@ -71,6 +73,7 @@ it('restores pgsql database', function (string $backup, ?string $password = null
         '--backup' => $backup,
         '--connection' => 'pgsql',
         '--password' => $password,
+        '--no-interaction' => true,
     ])->assertSuccessful();
 
     $result = DB::connection('pgsql')->table('users')->count();
@@ -100,3 +103,18 @@ it('throws NoBackupsFound exception if no backups are found on given disk', func
 })
     ->throws(NoBackupsFound::class)
     ->expectExceptionMessage('No backups found on disk local.');
+
+it('asks for password if password is not passed to command as an option', function () {
+    $this->artisan(RestoreCommand::class, [
+        '--disk' => 'remote',
+        '--backup' => 'Laravel/2023-01-28-mysql-no-compression-encrypted.zip',
+        '--connection' => 'mysql',
+    ])
+        ->expectsConfirmation('Use encryption password from config?', false)
+        ->expectsQuestion('What is the password to decrypt the backup? (leave empty if not encrypted)', 'password')
+        ->assertSuccessful();
+
+    $result = DB::connection('mysql')->table('users')->count();
+
+    expect($result)->toBe(10);
+})->group('mysql');

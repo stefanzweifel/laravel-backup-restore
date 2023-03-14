@@ -39,24 +39,13 @@ class RestoreCommand extends Command
         ImportDumpAction $importDumpAction,
         CleanupLocalBackupAction $cleanupLocalBackupAction
     ): int {
-        $destination = $this->getDestinationDiskToRestoreFrom();
-        $backup = $this->getBackupToRestore($destination);
         $connection = $this->option('connection') ?? config('backup.backup.source.databases')[0];
 
-        // Ask for password if backup is encrypted
-        // $password = $this->option('password') ?? $this->secret('What is the password?', null);
-
-        if ($this->option('password')) {
-            $password = $this->option('password');
-        } else {
-            $password = config('backup.backup.password');
-        }
-
         $pendingRestore = PendingRestore::make(
-            disk: $destination,
-            backup: $backup,
+            disk: $this->getDestinationDiskToRestoreFrom(),
+            backup: $this->getBackupToRestore($this->getDestinationDiskToRestoreFrom()),
             connection: $connection,
-            backupPassword: $password,
+            backupPassword: $this->getPassword(),
         );
 
         consoleOutput()->setCommand($this);
@@ -124,5 +113,20 @@ class RestoreCommand extends Command
             $listOfBackups->toArray(),
             $listOfBackups->last()
         );
+    }
+
+    private function getPassword(): ?string
+    {
+        if ($this->option('password')) {
+            $password = $this->option('password');
+        } elseif ($this->option('no-interaction')) {
+            $password = config('backup.backup.password');
+        } elseif ($this->confirm('Use encryption password from config?', true)) {
+            $password = config('backup.backup.password');
+        } else {
+            $password = $this->secret('What is the password to decrypt the backup? (leave empty if not encrypted)');
+        }
+
+        return $password;
     }
 }
