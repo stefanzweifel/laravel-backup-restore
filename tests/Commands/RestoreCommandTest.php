@@ -14,7 +14,9 @@ it('restores mysql database', function (string $backup, ?string $password = null
         '--connection' => 'mysql',
         '--password' => $password,
         '--no-interaction' => true,
-    ])->assertSuccessful();
+    ])
+        ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"mysql\" database connection.", true)
+        ->assertSuccessful();
 
     $result = DB::connection('mysql')->table('users')->count();
 
@@ -44,7 +46,9 @@ it('restores sqlite database', function (string $backup, ?string $password = nul
         '--connection' => 'sqlite',
         '--password' => $password,
         '--no-interaction' => true,
-    ])->assertSuccessful();
+    ])
+        ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"sqlite\" database connection.", true)
+        ->assertSuccessful();
 
     $result = DB::connection('sqlite')->table('users')->count();
 
@@ -74,7 +78,9 @@ it('restores pgsql database', function (string $backup, ?string $password = null
         '--connection' => 'pgsql',
         '--password' => $password,
         '--no-interaction' => true,
-    ])->assertSuccessful();
+    ])
+        ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"pgsql\" database connection.", true)
+        ->assertSuccessful();
 
     $result = DB::connection('pgsql')->table('users')->count();
 
@@ -112,6 +118,7 @@ it('asks for password if password is not passed to command as an option', functi
     ])
         ->expectsConfirmation('Use encryption password from config?', false)
         ->expectsQuestion('What is the password to decrypt the backup? (leave empty if not encrypted)', 'password')
+        ->expectsQuestion("Proceed to restore \"Laravel/2023-01-28-mysql-no-compression-encrypted.zip\" using the \"mysql\" database connection.", true)
         ->assertSuccessful();
 
     $result = DB::connection('mysql')->table('users')->count();

@@ -48,6 +48,11 @@ class RestoreCommand extends Command
             backupPassword: $this->getPassword(),
         );
 
+        if (! $this->confirm("Proceed to restore \"{$pendingRestore->backup}\" using the \"{$pendingRestore->connection}\" database connection.", true)) {
+            $this->warn('Abort.');
+            return self::INVALID;
+        }
+
         consoleOutput()->setCommand($this);
 
         $downloadBackupAction->execute($pendingRestore);
