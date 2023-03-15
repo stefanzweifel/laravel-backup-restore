@@ -1,11 +1,16 @@
-# A package to restore database backups made with spatie/laravel-backup.
+# Restore database backup made with spatie/laravel-backup
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/wnx/laravel-backup-restore.svg?style=flat-square)](https://packagist.org/packages/wnx/laravel-backup-restore)
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/stefanzweifel/laravel-backup-restore/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/stefanzweifel/laravel-backup-restore/actions?query=workflow%3Arun-tests+branch%3Amain)
 [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/stefanzweifel/laravel-backup-restore/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/stefanzweifel/laravel-backup-restore/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/wnx/laravel-backup-restore.svg?style=flat-square)](https://packagist.org/packages/wnx/laravel-backup-restore)
 
-This is where your description should go. Limit it to a paragraph or two. Consider adding a small example.
+A package to restore a database dump created by the [spatie/laravel-backup](https://github.com/spatie/laravel-backup) package.
+
+> **Note**   
+> Although this package has not been tagged as v1 yet, it has been thoroughly tested and proven to work well.   
+> We are still working on implementing a "health check" to ensure that the database has been imported correctly after a restore. Thank you for using our package!
+
 ## Installation
 
 You can install the package via composer:
@@ -14,44 +19,51 @@ You can install the package via composer:
 composer require wnx/laravel-backup-restore
 ```
 
-You can publish and run the migrations with:
-
-```bash
-php artisan vendor:publish --tag="laravel-backup-restore-migrations"
-php artisan migrate
-```
-
-You can publish the config file with:
-
-```bash
-php artisan vendor:publish --tag="laravel-backup-restore-config"
-```
-
-This is the contents of the published config file:
-
-```php
-return [
-];
-```
-
-Optionally, you can publish the views using
-
-```bash
-php artisan vendor:publish --tag="laravel-backup-restore-views"
-```
-
 ## Usage
 
-```php
-$laravelBackupRestore = new Wnx\LaravelBackupRestore();
-echo $laravelBackupRestore->echoPhrase('Hello, Wnx!');
+To restore a backup, run the following command.
+
+```bash
+php artisan backup:restore
 ```
 
+You will be prompted to select the backup you want to restore and wether the encryption password from the configuration should be used, to decrypt the backup.
+
+The package relies on an existing `config/backup.php`-file to find your backups, encryption/decryption key and database connections.
+
+### Optional Command Options
+
+You can pass disk, backup, database connection and decryption password to the Artisan command directly, to speed things up.
+
+```bash
+php artisan backup:restore --disk=s3 --backup=latest --connection=mysql --password=my-secret-password
+```
+
+#### `--disk`
+> TODO: Document
+
+#### `--backup`
+> TODO: Document
+
+#### `--connection`
+> TODO: Document
+
+#### `--password`
+> TODO: Document
+
+
 ## Testing
+
+The package comes with an extensive test suite.
+To run it, you need MySQL, PostgreSQL and sqlite installed on your system.
 
 ```bash
 composer test
 ```
+
+For MySQL and PostgreSQL the package expects that a `laravel_backup_restore` database exists and is accessible to a `root`-user without using a password.
+
+You can change user, password and database by passing ENV-variables to the shell command tp run the tests … or change the settings locally to your needs. See [TestCase](https://github.com/stefanzweifel/laravel-backup-restore/blob/main/tests/TestCase.php) for details.
 
 ## Changelog
 
