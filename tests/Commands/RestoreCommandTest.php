@@ -118,7 +118,7 @@ it('asks for password if password is not passed to command as an option', functi
     ])
         ->expectsConfirmation('Use encryption password from config?', false)
         ->expectsQuestion('What is the password to decrypt the backup? (leave empty if not encrypted)', 'password')
-        ->expectsQuestion("Proceed to restore \"Laravel/2023-01-28-mysql-no-compression-encrypted.zip\" using the \"mysql\" database connection.", true)
+        ->expectsQuestion('Proceed to restore "Laravel/2023-01-28-mysql-no-compression-encrypted.zip" using the "mysql" database connection.', true)
         ->assertSuccessful();
 
     $result = DB::connection('mysql')->table('users')->count();
