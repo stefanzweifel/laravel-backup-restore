@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Storage;
 use Wnx\LaravelBackupRestore\DbImporterFactory;
 use Wnx\LaravelBackupRestore\Events\DatabaseRestored;
 use Wnx\LaravelBackupRestore\Exceptions\CannotCreateDbImporter;
+use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 use Wnx\LaravelBackupRestore\Exceptions\NoDatabaseDumpsFound;
 use Wnx\LaravelBackupRestore\PendingRestore;
 
@@ -16,6 +17,7 @@ class ImportDumpAction
     /**
      * @throws NoDatabaseDumpsFound
      * @throws CannotCreateDbImporter
+     * @throws ImportFailed
      */
     public function execute(PendingRestore $pendingRestore): void
     {

@@ -18,6 +18,8 @@ class PostgreSql extends DbImporter
         $dumper = DbDumperFactory::createFromConnection('pgsql');
         $dumper->getContentsOfCredentialsFile();
 
+        // @todo: Improve detection of compressed files
+        // @todo: Use $pendingRestore->connection
         if (str($dumpFile)->endsWith('gz')) {
             return 'gunzip -c '.$dumpFile.' | psql -U '.config('database.connections.pgsql.username').' -d '.config('database.connections.pgsql.database');
         }

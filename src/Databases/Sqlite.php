@@ -8,6 +8,8 @@ class Sqlite extends DbImporter
 {
     public function getImportCommand(string $dumpFile): string
     {
+        // @todo: Improve detection of compressed files
+        // @todo: Use $pendingRestore->connection
         if (str($dumpFile)->endsWith('gz')) {
             // Shell command to import a gzipped SQL file to a sqlite database
             return 'gunzip -c '.$dumpFile.' | sqlite3 '.config('database.connections.sqlite.database');

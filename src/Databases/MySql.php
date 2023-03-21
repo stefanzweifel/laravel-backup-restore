@@ -23,6 +23,8 @@ class MySql extends DbImporter
 
         $dumper = DbDumperFactory::createFromConnection('mysql');
         $importToDatabase = $dumper->getDbName();
+
+        // @todo: Use $pendingRestore->connection
         // $importToDatabase = $pendingRestore->database;
 
         file_put_contents($this->temporaryDirectory->path('credentials.dat'), $dumper->getContentsOfCredentialsFile());
