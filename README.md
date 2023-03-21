@@ -1,15 +1,16 @@
-# Restore database backup made with spatie/laravel-backup
+# Restore database backups made with spatie/laravel-backup
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/wnx/laravel-backup-restore.svg?style=flat-square)](https://packagist.org/packages/wnx/laravel-backup-restore)
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/stefanzweifel/laravel-backup-restore/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/stefanzweifel/laravel-backup-restore/actions?query=workflow%3Arun-tests+branch%3Amain)
 [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/stefanzweifel/laravel-backup-restore/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/stefanzweifel/laravel-backup-restore/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/wnx/laravel-backup-restore.svg?style=flat-square)](https://packagist.org/packages/wnx/laravel-backup-restore)
 
-A package to restore a database dump created by the [spatie/laravel-backup](https://github.com/spatie/laravel-backup) package.
+A package to restore a database backup created by the [spatie/laravel-backup](https://github.com/spatie/laravel-backup) package.
 
 > **Note**   
-> Although this package has not been tagged as v1 yet, it has been thoroughly tested and proven to work well.   
-> We are still working on implementing a "health check" to ensure that the database has been imported correctly after a restore. Thank you for using our package!
+> Although no v1 of this package has been tagged yet, it has been thoroughly tested and proven to work well.   
+> We are still working on implementing a "health check" to ensure that the database has been imported correctly after a restore. We will tag a v1 once this feature has finished.
+> Thank you for using our package!
 
 ## Installation
 
@@ -27,7 +28,7 @@ To restore a backup, run the following command.
 php artisan backup:restore
 ```
 
-You will be prompted to select the backup you want to restore and wether the encryption password from the configuration should be used, to decrypt the backup.
+You will be prompted to select the backup you want to restore and whether the encryption password from the configuration should be used, to decrypt the backup.
 
 The package relies on an existing `config/backup.php`-file to find your backups, encryption/decryption key and database connections.
 
@@ -39,18 +40,20 @@ You can pass disk, backup, database connection and decryption password to the Ar
 php artisan backup:restore --disk=s3 --backup=latest --connection=mysql --password=my-secret-password
 ```
 
+Note that we used `latest` as the value for `--backup`. The command will automatically download the latest available backup and restore its database.
+
 #### `--disk`
-> TODO: Document
+The filesystem disk to look for backups. Defaults to the first destination disk configured in `config/backup.php`.
 
 #### `--backup`
-> TODO: Document
+Relative path to the backup file that should be restored.
+Use `latest` to automatically select latest backup.
 
 #### `--connection`
-> TODO: Document
+Database connection to restore backup. Defaults to the first source database connection configured in `config/backup.php`.
 
 #### `--password`
-> TODO: Document
-
+Password used to decrypt a possible encrypted backup. Defaults to encryption password set in `config/backup.php`.
 
 ## Testing
 
