@@ -10,16 +10,29 @@ jobs:
   test:
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest]
         php: [8.2, 8.1]
-        laravel: [9.*]
+        laravel: [9.*, 10.*]
         stability: [prefer-lowest, prefer-stable]
         include:
           - laravel: 9.*
             testbench: 7.*
             carbon: ^2.63
+          - laravel: 10.*
+            testbench: 8.*
+            carbon: ^2.63
+
+    services:
+      mysql:
+        image: mysql:latest
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: laravel_backup_restore
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
     name: P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.stability }} - ${{ matrix.os }}
 
@@ -32,7 +45,8 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo
-          coverage: none
+          ini-values: pcov.directory=src
+          coverage: pcov
 
       - name: Setup problem matchers
         run: |
@@ -47,5 +61,20 @@ jobs:
       - name: List Installed Dependencies
         run: composer show -D
 
+      - name: Create sqlite database
+        run: |
+          mkdir database
+          touch database/database.sqlite
+
       - name: Execute tests
-        run: vendor/bin/pest
+        run: vendor/bin/pest --exclude-group=pgsql --coverage
+        env:
+          MYSQL_PORT: 3306
+          MYSQL_USERNAME: root
+          MYSQL_PASSWORD: 'password'
+          MYSQL_DATABASE: laravel_backup_restore
+          PGSQL_HOST: localhost
+          PGSQL_PORT: 5432
+          PGSQL_USERNAME: postgres
+          PGSQL_PASSWORD: postgres
+          PGSQL_DATABASE: laravel_backup_restore
