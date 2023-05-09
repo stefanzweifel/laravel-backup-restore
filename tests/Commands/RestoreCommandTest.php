@@ -70,7 +70,7 @@ it('restores sqlite database', function (string $backup, ?string $password = nul
         'backup' => 'Laravel/2023-02-28-sqlite-compression-encrypted.zip',
         'password' => 'password',
     ],
-])->group('pgsql');
+])->group('sqlite');
 
 // pgsql
 it('restores pgsql database', function (string $backup, ?string $password = null) {
