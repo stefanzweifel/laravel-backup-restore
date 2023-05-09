@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Wnx\LaravelBackupRestore\Actions;
 
 use Illuminate\Support\Facades\DB;
