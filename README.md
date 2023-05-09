@@ -58,6 +58,9 @@ Database connection to restore backup. Defaults to the first source database con
 #### `--password`
 Password used to decrypt a possible encrypted backup. Defaults to encryption password set in `config/backup.php`.
 
+#### `--reset`
+Reset the database before restoring the backup. Defaults to `false`.
+
 ## Testing
 
 The package comes with an extensive test suite.
