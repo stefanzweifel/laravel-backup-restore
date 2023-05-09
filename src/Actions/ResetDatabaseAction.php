@@ -3,6 +3,7 @@
 namespace Wnx\LaravelBackupRestore\Actions;
 
 use Illuminate\Support\Facades\DB;
+use Wnx\LaravelBackupRestore\Events\DatabaseReset;
 use Wnx\LaravelBackupRestore\PendingRestore;
 
 class ResetDatabaseAction
@@ -14,5 +15,7 @@ class ResetDatabaseAction
         DB::connection($pendingRestore->connection)
             ->getSchemaBuilder()
             ->dropAllTables();
+
+        event(new DatabaseReset($pendingRestore));
     }
 }
