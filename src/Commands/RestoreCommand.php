@@ -14,6 +14,7 @@ use Wnx\LaravelBackupRestore\Actions\ImportDumpAction;
 use Wnx\LaravelBackupRestore\Actions\ResetDatabaseAction;
 use Wnx\LaravelBackupRestore\Exceptions\CannotCreateDbImporter;
 use Wnx\LaravelBackupRestore\Exceptions\DecompressionFailed;
+use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 use Wnx\LaravelBackupRestore\Exceptions\NoBackupsFound;
 use Wnx\LaravelBackupRestore\Exceptions\NoDatabaseDumpsFound;
 use Wnx\LaravelBackupRestore\PendingRestore;
@@ -34,6 +35,7 @@ class RestoreCommand extends Command
      * @throws NoBackupsFound
      * @throws CannotCreateDbImporter
      * @throws DecompressionFailed
+     * @throws ImportFailed
      */
     public function handle(
         DownloadBackupAction $downloadBackupAction,
