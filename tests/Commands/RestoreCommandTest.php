@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Wnx\LaravelBackupRestore\Commands\RestoreCommand;
+use Wnx\LaravelBackupRestore\Events\DatabaseReset;
 use Wnx\LaravelBackupRestore\Exceptions\NoBackupsFound;
 
 // MySQL
@@ -124,4 +126,21 @@ it('asks for password if password is not passed to command as an option', functi
     $result = DB::connection('mysql')->table('users')->count();
 
     expect($result)->toBe(10);
+})->group('mysql');
+
+it('reset database if option is provided', function () {
+    Event::fake([DatabaseReset::class]);
+
+    $this->artisan(RestoreCommand::class, [
+        '--disk' => 'remote',
+        '--backup' => 'Laravel/2023-01-28-mysql-no-compression-no-encryption.zip',
+        '--connection' => 'mysql',
+        '--password' => null,
+        '--no-interaction' => true,
+        '--reset' => true,
+    ])
+        ->expectsQuestion('Proceed to restore "Laravel/2023-01-28-mysql-no-compression-no-encryption.zip" using the "mysql" database connection.', true)
+        ->assertSuccessful();
+
+    Event::assertDispatched(DatabaseReset::class);
 })->group('mysql');
