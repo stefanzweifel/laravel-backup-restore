@@ -33,7 +33,7 @@ You will be prompted to select the backup you want to restore and whether the en
 The package relies on an existing `config/backup.php`-file to find your backups, encryption/decryption key and database connections.
 
 > **Note**   
-> By default, the name of a backup equals the value of the APP_NAME-env variable. The restore looks for backups in a folder with the backup name. Make sure that the APP_NAME-value is correct in the environment you're running the command. 
+> By default, the name of a backup equals the value of the APP_NAME-env variable. The restore-commands looks for backups in a folder with that backup name. Make sure that the APP_NAME-value is correct in the environment you're running the command. 
 
 ### Optional Command Options
 
