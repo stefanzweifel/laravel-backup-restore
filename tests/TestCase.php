@@ -41,6 +41,7 @@ class TestCase extends Orchestra
             'database' => env('PGSQL_DATABASE', 'laravel_backup_restore'),
             'username' => env('PGSQL_USERNAME', 'root'),
             'password' => env('PGSQL_PASSWORD', ''),
+            'search_path' => 'public',
         ]);
 
         // Setup default filesystem disk where "remote" backups are stored

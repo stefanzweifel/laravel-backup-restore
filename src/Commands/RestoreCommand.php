@@ -11,6 +11,7 @@ use Wnx\LaravelBackupRestore\Actions\CleanupLocalBackupAction;
 use Wnx\LaravelBackupRestore\Actions\DecompressBackupAction;
 use Wnx\LaravelBackupRestore\Actions\DownloadBackupAction;
 use Wnx\LaravelBackupRestore\Actions\ImportDumpAction;
+use Wnx\LaravelBackupRestore\Actions\ResetDatabaseAction;
 use Wnx\LaravelBackupRestore\Exceptions\CannotCreateDbImporter;
 use Wnx\LaravelBackupRestore\Exceptions\DecompressionFailed;
 use Wnx\LaravelBackupRestore\Exceptions\NoBackupsFound;
@@ -23,7 +24,8 @@ class RestoreCommand extends Command
                         {--disk= : The disk from where to restore the backup from. Defaults to the first disk in config/backup.php.}
                         {--backup= : The backup to restore. Defaults to the latest backup.}
                         {--connection= : The database connection to restore the backup to. Defaults to the first connection in config/backup.php.}
-                        {--password= : The password to decrypt the backup.}';
+                        {--password= : The password to decrypt the backup.}
+                        {--reset : Drop all tables in the database before restoring the backup.}';
 
     public $description = 'Restore a database backup dump from a given disk to a database connection.';
 
@@ -36,6 +38,7 @@ class RestoreCommand extends Command
     public function handle(
         DownloadBackupAction $downloadBackupAction,
         DecompressBackupAction $decompressBackupAction,
+        ResetDatabaseAction $resetDatabaseAction,
         ImportDumpAction $importDumpAction,
         CleanupLocalBackupAction $cleanupLocalBackupAction
     ): int {
@@ -58,6 +61,11 @@ class RestoreCommand extends Command
 
         $downloadBackupAction->execute($pendingRestore);
         $decompressBackupAction->execute($pendingRestore);
+
+        if ($this->option('reset')) {
+            $resetDatabaseAction->execute($pendingRestore);
+        }
+
         $importDumpAction->execute($pendingRestore);
 
         $this->info('Cleaning up …');
