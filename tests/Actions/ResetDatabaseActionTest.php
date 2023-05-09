@@ -50,7 +50,7 @@ it('resets database', function ($connection, $backup, $exceptionMessage) {
         'exceptionMessage' => 'no such table',
     ],
 
-    // Temporarily disbale PostgreSQL tests until we fix GitHub Actions workflow
+    // Temporarily disable PostgreSQL tests until we fix GitHub Actions workflow
     //    [
     //        'connection' => 'pgsql',
     //        'backup' => 'Laravel/2023-03-04-pgsql-no-compression-no-encryption.zip',
