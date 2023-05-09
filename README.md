@@ -40,7 +40,12 @@ The package relies on an existing `config/backup.php`-file to find your backups,
 You can pass disk, backup, database connection and decryption password to the Artisan command directly, to speed things up.
 
 ```bash
-php artisan backup:restore --disk=s3 --backup=latest --connection=mysql --password=my-secret-password
+php artisan backup:restore
+    --disk=s3
+    --backup=latest 
+    --connection=mysql 
+    --password=my-secret-password 
+    --reset
 ```
 
 Note that we used `latest` as the value for `--backup`. The command will automatically download the latest available backup and restore its database.
