@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Wnx\LaravelBackupRestore\Actions;
 
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Wnx\LaravelBackupRestore\DbImporterFactory;
 use Wnx\LaravelBackupRestore\Events\DatabaseRestored;
@@ -32,11 +31,11 @@ class ImportDumpAction
 
         consoleOutput()->info('Importing database '.str('dump')->plural($dbDumps)->__toString().' …');
 
-        foreach ($dbDumps as $dbDump) {
+        $dbDumps->each(function ($dbDump) use ($pendingRestore, $importer) {
             consoleOutput()->info('Importing '.str($dbDump)->afterLast('/')->__toString());
             $absolutePathToDump = Storage::disk($pendingRestore->restoreDisk)->path($dbDump);
             $importer->importToDatabase($absolutePathToDump);
-        }
+        });
 
         event(new DatabaseRestored($pendingRestore));
     }
