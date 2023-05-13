@@ -27,16 +27,15 @@ class ImportDumpAction
 
         $importer = DbImporterFactory::createFromConnection($pendingRestore->connection);
 
-        /** @var array<int, string> $dbDumps */
         $dbDumps = $pendingRestore->getAvailableDbDumps();
 
         consoleOutput()->info('Importing database '.str('dump')->plural($dbDumps)->__toString().' …');
 
-        foreach ($dbDumps as $dbDump) {
+        $dbDumps->each(function ($dbDump) use ($pendingRestore, $importer) {
             consoleOutput()->info('Importing '.str($dbDump)->afterLast('/')->__toString());
             $absolutePathToDump = Storage::disk($pendingRestore->restoreDisk)->path($dbDump);
             $importer->importToDatabase($absolutePathToDump);
-        }
+        });
 
         event(new DatabaseRestored($pendingRestore));
     }
