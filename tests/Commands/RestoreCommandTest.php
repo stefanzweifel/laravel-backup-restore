@@ -144,3 +144,19 @@ it('reset database if option is provided', function () {
 
     Event::assertDispatched(DatabaseReset::class);
 })->group('mysql');
+
+it('restores database from backup that contains multiple mysql dumps', function () {
+    $this->artisan(RestoreCommand::class, [
+        '--disk' => 'remote',
+        '--backup' => 'Laravel/2023-01-28-mysql-no-compression-no-encryption-multiple-dumps.zip',
+        '--connection' => 'mysql',
+        '--password' => null,
+        '--no-interaction' => true,
+    ])
+        ->expectsQuestion('Proceed to restore "Laravel/2023-01-28-mysql-no-compression-no-encryption-multiple-dumps.zip" using the "mysql" database connection.', true)
+        ->assertSuccessful();
+
+    $result = DB::connection('mysql')->table('users')->count();
+
+    expect($result)->toBe(10);
+});
