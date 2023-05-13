@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Wnx\LaravelBackupRestore;
 
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use SensitiveParameter;
@@ -65,9 +66,12 @@ class PendingRestore
             ->has("{$this->getPathToLocalDecompressedBackup()}/db-dumps");
     }
 
-    public function getAvailableDbDumps(): array
+    public function getAvailableDbDumps(): Collection
     {
-        return Storage::disk($this->restoreDisk)
+        $files = Storage::disk($this->restoreDisk)
             ->files("{$this->getPathToLocalDecompressedBackup()}/db-dumps");
+
+        return collect($files)
+            ->filter(fn ($file) => Str::endsWith($file, ['.sql', '.sql.gz']));
     }
 }
