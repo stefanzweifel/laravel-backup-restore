@@ -14,6 +14,7 @@ class LaravelBackupRestoreServiceProvider extends PackageServiceProvider
     {
         $package
             ->name('laravel-backup-restore')
+            ->hasConfigFile('backup-restore')
             ->hasCommand(RestoreCommand::class);
     }
 }
