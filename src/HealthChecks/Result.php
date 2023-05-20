@@ -25,6 +25,8 @@ class Result
     {
         $this->status = Command::SUCCESS;
 
+        $this->message = null;
+
         return $this;
     }
 
