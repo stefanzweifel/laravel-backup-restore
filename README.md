@@ -7,11 +7,6 @@
 
 A package to restore a database backup created by the [spatie/laravel-backup](https://github.com/spatie/laravel-backup) package.
 
-> **Note**   
-> Although no v1 of this package has been tagged yet, it has been thoroughly tested and proven to work well.   
-> We are still working on implementing a "health check" to ensure that the database has been imported correctly after a restore. We will tag a v1 once this feature has finished.
-> Thank you for using our package!
-
 ## Installation
 
 You can install the package via composer:
