@@ -17,6 +17,8 @@ use Wnx\LaravelBackupRestore\Exceptions\DecompressionFailed;
 use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 use Wnx\LaravelBackupRestore\Exceptions\NoBackupsFound;
 use Wnx\LaravelBackupRestore\Exceptions\NoDatabaseDumpsFound;
+use Wnx\LaravelBackupRestore\HealthChecks\HealthCheck;
+use Wnx\LaravelBackupRestore\HealthChecks\Result;
 use Wnx\LaravelBackupRestore\PendingRestore;
 
 class RestoreCommand extends Command
@@ -73,7 +75,7 @@ class RestoreCommand extends Command
         $this->info('Cleaning up …');
         $cleanupLocalBackupAction->execute($pendingRestore);
 
-        return self::SUCCESS;
+        return $this->runHealthChecks($pendingRestore);
     }
 
     private function getDestinationDiskToRestoreFrom(): string
@@ -144,5 +146,23 @@ class RestoreCommand extends Command
         }
 
         return $password;
+    }
+
+    private function runHealthChecks(PendingRestore $pendingRestore): int
+    {
+        $failedResults = collect(config('backup-restore.health-checks'))
+            ->map(fn ($check) => $check::new())
+            ->map(fn (HealthCheck $check) => $check->run($pendingRestore))
+            ->filter(fn (Result $result) => $result->status === self::FAILURE);
+
+        if ($failedResults->count() > 0) {
+            $failedResults->each(fn (Result $result) => $this->error($result->message));
+
+            return self::FAILURE;
+        }
+
+        $this->info('All health checks passed.');
+
+        return self::SUCCESS;
     }
 }
