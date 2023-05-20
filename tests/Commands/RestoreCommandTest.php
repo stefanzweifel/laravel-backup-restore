@@ -18,6 +18,7 @@ it('restores mysql database', function (string $backup, ?string $password = null
         '--no-interaction' => true,
     ])
         ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"mysql\" database connection.", true)
+        ->expectsOutput('All health checks passed.')
         ->assertSuccessful();
 
     $result = DB::connection('mysql')->table('users')->count();
@@ -159,4 +160,18 @@ it('restores database from backup that contains multiple mysql dumps', function 
     $result = DB::connection('mysql')->table('users')->count();
 
     expect($result)->toBe(10);
+});
+
+it('shows error message if health check after import fails', function () {
+    $this->artisan(RestoreCommand::class, [
+        '--disk' => 'remote',
+        '--backup' => 'Laravel/2023-01-28-mysql-no-compression-no-encryption-empty-dump.zip',
+        '--connection' => 'mysql',
+        '--password' => null,
+        '--no-interaction' => true,
+        '--reset' => true,
+    ])
+        ->expectsQuestion('Proceed to restore "Laravel/2023-01-28-mysql-no-compression-no-encryption-empty-dump.zip" using the "mysql" database connection.', true)
+        ->expectsOutput('Database has not tables after restore.')
+        ->assertFailed();
 });
