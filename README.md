@@ -107,7 +107,10 @@ class MyCustomHealthCheck extends HealthCheck
         // We assume that your app generates sales every day.
         // This check ensures that the database contains sales from yesterday.
         $newSales = \App\Models\Sale::query()
-            ->whereBetween('created_at', [now()->subDay()->startOfDay(), now()->subDay()->endOfDay()])
+            ->whereBetween('created_at', [
+                now()->subDay()->startOfDay(), 
+                now()->subDay()->endOfDay()
+            ])
             ->exists();
 
         // If no sales were created yesterday, we consider the restore as failed.
