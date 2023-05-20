@@ -30,8 +30,13 @@ This is the contents of the published config file:
 
 ```php
 return [
-    /*
-     * Health checks are run after the backup has been restored.
+
+    /**
+     * Health checks are run after a given backup has been restored.
+     * With health checks, you can make sure that the restored database contains the data you expect.
+     * By default, we check if the restored database contains any tables.
+     *
+     * You can add your own health checks by adding a class that extends the HealthCheck class.
      * The restore command will fail, if any health checks fail.
      */
     'health-checks' => [
