@@ -20,6 +20,26 @@ You can install the package via composer:
 composer require wnx/laravel-backup-restore
 ```
 
+Optionally, you can publish the config file with:
+
+```bash
+php artisan vendor:publish --tag="backup-restore-config"
+```
+
+This is the contents of the published config file:
+
+```php
+return [
+    /*
+     * Health checks are run after the backup has been restored.
+     * The restore command will fail, if any health checks fail.
+     */
+    'health-checks' => [
+        \Wnx\LaravelBackupRestore\HealthChecks\DatabaseHasTables::class,
+    ],
+];
+```
+
 ## Usage
 
 To restore a backup, run the following command.
@@ -65,6 +85,49 @@ Password used to decrypt a possible encrypted backup. Defaults to encryption pas
 
 #### `--reset`
 Reset the database before restoring the backup. Defaults to `false`.
+
+### Health Checks
+After the backup has been restored, the package will run a series of health checks to ensure that the database has been imported correctly.
+By default, the package will check if the database has tables after the restore.
+
+You can add your own health checks by creating classes that extend `Wnx\LaravelBackupRestore\HealthChecks\HealthCheck`-class.
+
+```php
+namespace App\HealthChecks;
+
+use Wnx\LaravelBackupRestore\PendingRestore;
+use Wnx\LaravelBackupRestore\HealthChecks\HealthCheck;
+
+class MyCustomHealthCheck extends HealthCheck
+{
+    public function run(PendingRestore $pendingRestore): Result
+    {
+        $result = Result::make($this);
+
+        // We assume that your app generates sales every day.
+        // This check ensures that the database contains sales from yesterday.
+        $newSales = \App\Models\Sale::query()
+            ->whereBetween('created_at', [now()->subDay()->startOfDay(), now()->subDay()->endOfDay()])
+            ->exists();
+
+        // If no sales were created yesterday, we consider the restore as failed.
+        if ($newSales === false) {
+            return $result->failed('Database contains no sales from yesterday.');
+        }
+
+        return $result->ok();
+    }
+}
+```
+
+Add your health check to the `health-checks`-array in the `config/laravel-backup-restore.php`-file.
+
+```php
+    'health-checks' => [
+        \Wnx\LaravelBackupRestore\HealthChecks\DatabaseHasTables::class,
+        \App\HealthChecks\MyCustomHealthCheck::class,
+    ],
+```
 
 ## Testing
 
