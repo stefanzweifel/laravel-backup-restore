@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Wnx\LaravelBackupRestore\HealthChecks;
+namespace Wnx\LaravelBackupRestore\HealthChecks\Checks;
 
 use Illuminate\Support\Facades\DB;
+use Wnx\LaravelBackupRestore\HealthChecks\HealthCheck;
+use Wnx\LaravelBackupRestore\HealthChecks\Result;
 use Wnx\LaravelBackupRestore\PendingRestore;
 
 class DatabaseHasTables extends HealthCheck

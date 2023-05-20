@@ -13,6 +13,6 @@ return [
      * The restore command will fail, if any health checks fail.
      */
     'health-checks' => [
-        \Wnx\LaravelBackupRestore\HealthChecks\DatabaseHasTables::class,
+        \Wnx\LaravelBackupRestore\HealthChecks\Checks\DatabaseHasTables::class,
     ],
 ];
