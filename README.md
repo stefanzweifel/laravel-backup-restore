@@ -132,6 +132,80 @@ Add your health check to the `health-checks`-array in the `config/laravel-backup
     ],
 ```
 
+## Check Backup Integrity automatically with GitHub Actions
+In addition to running the `backup:restore` command manually, you can also use this package to regularly test the integrity of your backups using GitHub Actions.
+
+The GitHub Actions workflow below can either be triggered manually through the Github UI ([`workflow_dispatch`-trigger](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#workflow_dispatch)) or runs automatically on a schedule ([`schedule`-trigger](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule)).
+The workflow starts an empty MySQL database, clones your Laravel application, sets up PHP, installs composer dependencies and sets up the Laravel app. It then downloads, decrypts and restores the latest available backup to the MySQL database available in the GitHub Actions workflow run. The database is wiped, before the workflow completes.
+
+Note that we pass a couple of env variables to the `backup:restore` command. Most of those values have been declared as [GitHub Action secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets). By using secrets our AWS keys are not being leaked in the workflow logs.
+
+If the restore command fails, the entire workflow will fail, you and will receive a notification from GitHub.
+This is obviously just a starting point. You can add more steps to the workflow, to – for example – notify you through Slack, if a restore succeeded or failed.
+
+```yml
+name: Validate Backup Integrity
+
+on:
+  # Allow triggering this workflow manually through the GitHub UI.
+  workflow_dispatch:
+  schedule:
+    # Run workflow automatically on the first day of each month at 14:00 UTC
+    # https://crontab.guru/#0_14_1_*_*
+    - cron: "0 14 1 * *"
+
+jobs:
+  restore-backup:
+    name: Restore backup
+    runs-on: ubuntu-latest
+
+    services:
+      # Start MySQL and create an empty "laravel"-database
+      mysql:
+        image: mysql:latest
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: laravel
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.2
+
+      - uses: ramsey/composer-install@v2
+
+      - run: cp .env.example .env
+
+      - run: php artisan key:generate
+
+      # Download latest backup and restore it to the "laravel"-database.
+      # By default the command checks, if the database contains any tables after the restore. 
+      # You can write your own Health Checks to extend this feature.
+      - name: Restore Backup
+        run: php artisan backup:restore --backup=latest --no-interaction
+        env:
+            APP_NAME: 'Laravel'
+            DB_PASSWORD: 'password'
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+            AWS_BACKUP_BUCKET: ${{ secrets.AWS_BACKUP_BUCKET }}
+            BACKUP_ARCHIVE_PASSWORD: ${{ secrets.BACKUP_ARCHIVE_PASSWORD }}
+
+      # Wipe database after the backup has been restored.
+      - name: Wipe Database
+        run: php artisan db:wipe --no-interaction
+        env:
+            DB_PASSWORD: 'password'
+```
+
 ## Testing
 
 The package comes with an extensive test suite.
