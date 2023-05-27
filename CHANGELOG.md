@@ -2,6 +2,12 @@
 
 All notable changes to `laravel-backup-restore` will be documented in this file.
 
+## v0.3.1 - 2023-05-27
+
+### Fixed
+
+- Update version constraint of `spatie/temporary-directory` for better compatibility with other packages.
+
 ## v0.3.0 - 2023-05-20
 
 ### Added
