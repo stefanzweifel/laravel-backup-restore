@@ -9,7 +9,7 @@ use Wnx\LaravelBackupRestore\Events\DatabaseReset;
 use Wnx\LaravelBackupRestore\Exceptions\NoBackupsFound;
 
 // MySQL
-it('restores mysql database', function (string $backup, ?string $password = null) {
+it('restores mysql database', function (string $backup, string $password = null) {
     $this->artisan(RestoreCommand::class, [
         '--disk' => 'remote',
         '--backup' => $backup,
@@ -42,7 +42,7 @@ it('restores mysql database', function (string $backup, ?string $password = null
 ])->group('mysql');
 
 // sqlite
-it('restores sqlite database', function (string $backup, ?string $password = null) {
+it('restores sqlite database', function (string $backup, string $password = null) {
     $this->artisan(RestoreCommand::class, [
         '--disk' => 'remote',
         '--backup' => $backup,
@@ -74,7 +74,7 @@ it('restores sqlite database', function (string $backup, ?string $password = nul
 ])->group('sqlite');
 
 // pgsql
-it('restores pgsql database', function (string $backup, ?string $password = null) {
+it('restores pgsql database', function (string $backup, string $password = null) {
     $this->artisan(RestoreCommand::class, [
         '--disk' => 'remote',
         '--backup' => $backup,

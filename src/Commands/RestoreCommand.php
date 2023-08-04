@@ -7,6 +7,9 @@ namespace Wnx\LaravelBackupRestore\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use function Laravel\Prompts\password;
+use Laravel\Prompts\Prompt;
+use function Laravel\Prompts\select;
 use Wnx\LaravelBackupRestore\Actions\CleanupLocalBackupAction;
 use Wnx\LaravelBackupRestore\Actions\DecompressBackupAction;
 use Wnx\LaravelBackupRestore\Actions\DownloadBackupAction;
@@ -46,6 +49,10 @@ class RestoreCommand extends Command
         ImportDumpAction $importDumpAction,
         CleanupLocalBackupAction $cleanupLocalBackupAction
     ): int {
+        Prompt::fallbackWhen(
+            ! $this->input->isInteractive() || windows_os() || app()->runningUnitTests()
+        );
+
         $connection = $this->option('connection') ?? config('backup.backup.source.databases')[0];
 
         $pendingRestore = PendingRestore::make(
@@ -93,7 +100,7 @@ class RestoreCommand extends Command
         }
 
         // Ask user to choose a disk
-        return $this->choice(
+        return select(
             'From which disk should the backup be restored?',
             $availableDestinations,
             head($availableDestinations)
@@ -126,9 +133,9 @@ class RestoreCommand extends Command
             return $this->option('backup');
         }
 
-        return $this->choice(
+        return select(
             'Which backup should be restored?',
-            $listOfBackups->toArray(),
+            $listOfBackups,
             $listOfBackups->last()
         );
     }
@@ -142,7 +149,7 @@ class RestoreCommand extends Command
         } elseif ($this->confirm('Use encryption password from config?', true)) {
             $password = config('backup.backup.password');
         } else {
-            $password = $this->secret('What is the password to decrypt the backup? (leave empty if not encrypted)');
+            $password = password('What is the password to decrypt the backup? (leave empty if not encrypted)');
         }
 
         return $password;
