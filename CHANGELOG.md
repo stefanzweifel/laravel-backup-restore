@@ -2,6 +2,12 @@
 
 All notable changes to `laravel-backup-restore` will be documented in this file.
 
+## v1.0.1 - 2023-08-12
+
+### Changed
+
+- Show Connection Details in Confirmation Prompt ([#20](https://github.com/stefanzweifel/laravel-backup-restore/pull/20))
+
 ## v1.0.0 - 2023-06-15
 
 First stable release
