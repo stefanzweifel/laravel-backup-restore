@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Wnx\LaravelBackupRestore\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Wnx\LaravelBackupRestore\Actions\CleanupLocalBackupAction;
@@ -55,7 +56,7 @@ class RestoreCommand extends Command
             backupPassword: $this->getPassword(),
         );
 
-        if (! $this->confirm("Proceed to restore \"{$pendingRestore->backup}\" using the \"{$pendingRestore->connection}\" database connection.", true)) {
+        if (! $this->confirmRestoreProcess($pendingRestore)) {
             $this->warn('Abort.');
 
             return self::INVALID;
@@ -164,5 +165,25 @@ class RestoreCommand extends Command
         $this->info('All health checks passed.');
 
         return self::SUCCESS;
+    }
+
+    private function confirmRestoreProcess(PendingRestore $pendingRestore): bool
+    {
+        $connectionConfig = config("database.connections.{$pendingRestore->connection}");
+        $connectionInformationForConfirmation = collect([
+            'Host' => Arr::get($connectionConfig, 'host'),
+            'Database' => Arr::get($connectionConfig, 'database'),
+            'username' => Arr::get($connectionConfig, 'username'),
+        ])->filter()->map(fn ($value, $key) => "{$key}: {$value}")->implode(', ');
+
+        return $this->confirm(
+            sprintf(
+                'Proceed to restore "%s" using the "%s" database connection. (%s)',
+                $pendingRestore->backup,
+                $pendingRestore->connection,
+                $connectionInformationForConfirmation
+            ),
+            true
+        );
     }
 }
