@@ -9,7 +9,7 @@ use Wnx\LaravelBackupRestore\Events\DatabaseReset;
 use Wnx\LaravelBackupRestore\Exceptions\NoBackupsFound;
 
 // MySQL
-it('restores mysql database', function (string $backup, ?string $password = null) {
+it('restores mysql database', function (string $backup, string $password = null) {
     $this->artisan(RestoreCommand::class, [
         '--disk' => 'remote',
         '--backup' => $backup,
@@ -17,7 +17,7 @@ it('restores mysql database', function (string $backup, ?string $password = null
         '--password' => $password,
         '--no-interaction' => true,
     ])
-        ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"mysql\" database connection.", true)
+        ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"mysql\" database connection. (Host: 127.0.0.1, Database: laravel_backup_restore, username: root)", true)
         ->expectsOutput('All health checks passed.')
         ->assertSuccessful();
 
@@ -42,7 +42,7 @@ it('restores mysql database', function (string $backup, ?string $password = null
 ])->group('mysql');
 
 // sqlite
-it('restores sqlite database', function (string $backup, ?string $password = null) {
+it('restores sqlite database', function (string $backup, string $password = null) {
     $this->artisan(RestoreCommand::class, [
         '--disk' => 'remote',
         '--backup' => $backup,
@@ -50,7 +50,7 @@ it('restores sqlite database', function (string $backup, ?string $password = nul
         '--password' => $password,
         '--no-interaction' => true,
     ])
-        ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"sqlite\" database connection.", true)
+        ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"sqlite\" database connection. (Database: database/database.sqlite)", true)
         ->assertSuccessful();
 
     $result = DB::connection('sqlite')->table('users')->count();
@@ -74,7 +74,7 @@ it('restores sqlite database', function (string $backup, ?string $password = nul
 ])->group('sqlite');
 
 // pgsql
-it('restores pgsql database', function (string $backup, ?string $password = null) {
+it('restores pgsql database', function (string $backup, string $password = null) {
     $this->artisan(RestoreCommand::class, [
         '--disk' => 'remote',
         '--backup' => $backup,
@@ -82,7 +82,7 @@ it('restores pgsql database', function (string $backup, ?string $password = null
         '--password' => $password,
         '--no-interaction' => true,
     ])
-        ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"pgsql\" database connection.", true)
+        ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"pgsql\" database connection. (Host: 127.0.0.1, Database: laravel_backup_restore, username: root)", true)
         ->assertSuccessful();
 
     $result = DB::connection('pgsql')->table('users')->count();
@@ -121,7 +121,7 @@ it('asks for password if password is not passed to command as an option', functi
     ])
         ->expectsConfirmation('Use encryption password from config?', false)
         ->expectsQuestion('What is the password to decrypt the backup? (leave empty if not encrypted)', 'password')
-        ->expectsQuestion('Proceed to restore "Laravel/2023-01-28-mysql-no-compression-encrypted.zip" using the "mysql" database connection.', true)
+        ->expectsQuestion('Proceed to restore "Laravel/2023-01-28-mysql-no-compression-encrypted.zip" using the "mysql" database connection. (Host: 127.0.0.1, Database: laravel_backup_restore, username: root)', true)
         ->assertSuccessful();
 
     $result = DB::connection('mysql')->table('users')->count();
@@ -140,7 +140,7 @@ it('reset database if option is provided', function () {
         '--no-interaction' => true,
         '--reset' => true,
     ])
-        ->expectsQuestion('Proceed to restore "Laravel/2023-01-28-mysql-no-compression-no-encryption.zip" using the "mysql" database connection.', true)
+        ->expectsQuestion('Proceed to restore "Laravel/2023-01-28-mysql-no-compression-no-encryption.zip" using the "mysql" database connection. (Host: 127.0.0.1, Database: laravel_backup_restore, username: root)', true)
         ->assertSuccessful();
 
     Event::assertDispatched(DatabaseReset::class);
@@ -154,7 +154,7 @@ it('restores database from backup that contains multiple mysql dumps', function 
         '--password' => null,
         '--no-interaction' => true,
     ])
-        ->expectsQuestion('Proceed to restore "Laravel/2023-01-28-mysql-no-compression-no-encryption-multiple-dumps.zip" using the "mysql" database connection.', true)
+        ->expectsQuestion('Proceed to restore "Laravel/2023-01-28-mysql-no-compression-no-encryption-multiple-dumps.zip" using the "mysql" database connection. (Host: 127.0.0.1, Database: laravel_backup_restore, username: root)', true)
         ->assertSuccessful();
 
     $result = DB::connection('mysql')->table('users')->count();
@@ -171,7 +171,7 @@ it('shows error message if health check after import fails', function () {
         '--no-interaction' => true,
         '--reset' => true,
     ])
-        ->expectsQuestion('Proceed to restore "Laravel/2023-01-28-mysql-no-compression-no-encryption-empty-dump.zip" using the "mysql" database connection.', true)
+        ->expectsQuestion('Proceed to restore "Laravel/2023-01-28-mysql-no-compression-no-encryption-empty-dump.zip" using the "mysql" database connection. (Host: 127.0.0.1, Database: laravel_backup_restore, username: root)', true)
         ->expectsOutput('Database has not tables after restore.')
         ->assertFailed();
 });
