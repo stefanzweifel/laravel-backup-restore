@@ -2,6 +2,12 @@
 
 All notable changes to `laravel-backup-restore` will be documented in this file.
 
+## v1.0.2 - 2023-08-22
+
+### Fixed
+
+- Use Driver Name when creating DbImporter instead of Connection Name ([#24](https://github.com/stefanzweifel/laravel-backup-restore/pull/24))
+
 ## v1.0.1 - 2023-08-12
 
 ### Changed
