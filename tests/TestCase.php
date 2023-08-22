@@ -24,8 +24,21 @@ class TestCase extends Orchestra
             'driver' => 'sqlite',
             'database' => 'database/database.sqlite',
         ]);
+        $app['config']->set('database.connections.sqlite-restore', [
+            'driver' => 'sqlite',
+            'database' => 'database/database.sqlite',
+        ]);
 
         $app['config']->set('database.connections.mysql', [
+            'driver' => 'mysql',
+            'host' => env('MYSQL_HOST', '127.0.0.1'),
+            'port' => env('MYSQL_PORT', '3306'),
+            'database' => env('MYSQL_DATABASE', 'laravel_backup_restore'),
+            'username' => env('MYSQL_USERNAME', 'root'),
+            'password' => env('MYSQL_PASSWORD', ''),
+        ]);
+
+        $app['config']->set('database.connections.mysql-restore', [
             'driver' => 'mysql',
             'host' => env('MYSQL_HOST', '127.0.0.1'),
             'port' => env('MYSQL_PORT', '3306'),
@@ -42,6 +55,19 @@ class TestCase extends Orchestra
             'username' => env('PGSQL_USERNAME', 'root'),
             'password' => env('PGSQL_PASSWORD', ''),
             'search_path' => 'public',
+        ]);
+        $app['config']->set('database.connections.pgsql-restore', [
+            'driver' => 'pgsql',
+            'host' => env('PGSQL_HOST', '127.0.0.1'),
+            'port' => env('PGSQL_PORT', '5432'),
+            'database' => env('PGSQL_DATABASE', 'laravel_backup_restore'),
+            'username' => env('PGSQL_USERNAME', 'root'),
+            'password' => env('PGSQL_PASSWORD', ''),
+            'search_path' => 'public',
+        ]);
+
+        $app['config']->set('database.connections.unsupported-driver', [
+            'driver' => 'sqlsrv',
         ]);
 
         // Setup default filesystem disk where "remote" backups are stored
