@@ -66,6 +66,10 @@ class TestCase extends Orchestra
             'search_path' => 'public',
         ]);
 
+        $app['config']->set('database.connections.unsupported-driver', [
+            'driver' => 'sqlsrv',
+        ]);
+
         // Setup default filesystem disk where "remote" backups are stored
         $app['config']->set('filesystems.disks.remote', [
             'driver' => 'local',
