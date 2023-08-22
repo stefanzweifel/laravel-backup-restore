@@ -13,11 +13,11 @@ it('restores mysql database', function (string $backup, string $password = null)
     $this->artisan(RestoreCommand::class, [
         '--disk' => 'remote',
         '--backup' => $backup,
-        '--connection' => 'mysql',
+        '--connection' => 'mysql-restore',
         '--password' => $password,
         '--no-interaction' => true,
     ])
-        ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"mysql\" database connection. (Host: 127.0.0.1, Database: laravel_backup_restore, username: root)", true)
+        ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"mysql-restore\" database connection. (Host: 127.0.0.1, Database: laravel_backup_restore, username: root)", true)
         ->expectsOutput('All health checks passed.')
         ->assertSuccessful();
 
@@ -46,11 +46,11 @@ it('restores sqlite database', function (string $backup, string $password = null
     $this->artisan(RestoreCommand::class, [
         '--disk' => 'remote',
         '--backup' => $backup,
-        '--connection' => 'sqlite',
+        '--connection' => 'sqlite-restore',
         '--password' => $password,
         '--no-interaction' => true,
     ])
-        ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"sqlite\" database connection. (Database: database/database.sqlite)", true)
+        ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"sqlite-restore\" database connection. (Database: database/database.sqlite)", true)
         ->assertSuccessful();
 
     $result = DB::connection('sqlite')->table('users')->count();
@@ -78,11 +78,11 @@ it('restores pgsql database', function (string $backup, string $password = null)
     $this->artisan(RestoreCommand::class, [
         '--disk' => 'remote',
         '--backup' => $backup,
-        '--connection' => 'pgsql',
+        '--connection' => 'pgsql-restore',
         '--password' => $password,
         '--no-interaction' => true,
     ])
-        ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"pgsql\" database connection. (Host: 127.0.0.1, Database: laravel_backup_restore, username: root)", true)
+        ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"pgsql-restore\" database connection. (Host: 127.0.0.1, Database: laravel_backup_restore, username: root)", true)
         ->assertSuccessful();
 
     $result = DB::connection('pgsql')->table('users')->count();
