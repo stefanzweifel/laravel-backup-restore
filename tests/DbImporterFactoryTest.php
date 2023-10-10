@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Wnx\LaravelBackupRestore\Databases\DbImporter;
 use Wnx\LaravelBackupRestore\DbImporterFactory;
 use Wnx\LaravelBackupRestore\Exceptions\CannotCreateDbImporter;
 
@@ -33,6 +34,25 @@ it('returns db importer instances for given database driver', function ($connect
         'expected' => \Wnx\LaravelBackupRestore\Databases\PostgreSql::class,
     ],
 ]);
+
+it('returns custom db importer instance for the given database driver', function () {
+    DbImporterFactory::extend('sqlsrv', new class() extends DbImporter
+    {
+        public function getImportCommand(string $dumpFile): string
+        {
+            return 'import-command';
+        }
+
+        public function getCliName(): string
+        {
+            return 'sqlsrv';
+        }
+    });
+
+    $instance = DbImporterFactory::createFromConnection('unsupported-driver');
+
+    expect($instance->getImportCommand())->toEqual('import-command');
+});
 
 it('throws exception if no db importer instance can be created for connection')
     ->tap(fn () => DbImporterFactory::createFromConnection('unsupported'))
