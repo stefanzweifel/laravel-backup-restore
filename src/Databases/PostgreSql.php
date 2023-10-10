@@ -26,4 +26,9 @@ class PostgreSql extends DbImporter
 
         return 'psql -U '.config('database.connections.pgsql.username').' -d '.config('database.connections.pgsql.database').' < '.$dumpFile;
     }
+
+    public function getCliName(): string
+    {
+        return 'psql';
+    }
 }

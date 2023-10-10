@@ -41,6 +41,11 @@ class MySql extends DbImporter
         return $command;
     }
 
+    public function getCliName(): string
+    {
+        return 'mysql';
+    }
+
     private function getMySqlImportCommandForCompressedDump(string $storagePathToDatabaseFile, mixed $temporaryCredentialsFile, string $importToDatabase): string
     {
         return collect([
