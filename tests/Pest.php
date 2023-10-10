@@ -3,8 +3,9 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Storage;
-use function Pest\Laravel\artisan;
 use Wnx\LaravelBackupRestore\Tests\TestCase;
+
+use function Pest\Laravel\artisan;
 
 uses(TestCase::class)
     ->beforeEach(function () {
