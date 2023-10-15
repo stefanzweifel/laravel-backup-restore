@@ -8,9 +8,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use function Laravel\Prompts\password;
 use Laravel\Prompts\Prompt;
-use function Laravel\Prompts\select;
 use Wnx\LaravelBackupRestore\Actions\CheckDependenciesAction;
 use Wnx\LaravelBackupRestore\Actions\CleanupLocalBackupAction;
 use Wnx\LaravelBackupRestore\Actions\DecompressBackupAction;
@@ -26,6 +24,9 @@ use Wnx\LaravelBackupRestore\Exceptions\NoDatabaseDumpsFound;
 use Wnx\LaravelBackupRestore\HealthChecks\HealthCheck;
 use Wnx\LaravelBackupRestore\HealthChecks\Result;
 use Wnx\LaravelBackupRestore\PendingRestore;
+
+use function Laravel\Prompts\password;
+use function Laravel\Prompts\select;
 
 class RestoreCommand extends Command
 {
