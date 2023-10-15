@@ -9,6 +9,8 @@ use Wnx\LaravelBackupRestore\Exceptions\DecompressionFailed;
 use Wnx\LaravelBackupRestore\PendingRestore;
 use ZipArchive;
 
+use function Laravel\Prompts\info;
+
 class DecompressBackupAction
 {
     /**
@@ -21,7 +23,7 @@ class DecompressBackupAction
         $pathToFileToDecompress = Storage::disk($pendingRestore->restoreDisk)
             ->path($pendingRestore->getPathToLocalCompressedBackup());
 
-        consoleOutput()->info('Extracting database dump from backup …');
+        info('Extracting database dump from backup …');
 
         $zip = new ZipArchive;
         $result = $zip->open($pathToFileToDecompress);

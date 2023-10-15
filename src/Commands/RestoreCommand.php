@@ -25,6 +25,7 @@ use Wnx\LaravelBackupRestore\HealthChecks\HealthCheck;
 use Wnx\LaravelBackupRestore\HealthChecks\Result;
 use Wnx\LaravelBackupRestore\PendingRestore;
 
+use function Laravel\Prompts\info;
 use function Laravel\Prompts\password;
 use function Laravel\Prompts\select;
 
@@ -87,7 +88,7 @@ class RestoreCommand extends Command
 
         $importDumpAction->execute($pendingRestore);
 
-        $this->info('Cleaning up …');
+        info('Cleaning up …');
         $cleanupLocalBackupAction->execute($pendingRestore);
 
         return $this->runHealthChecks($pendingRestore);
@@ -122,7 +123,7 @@ class RestoreCommand extends Command
     {
         $name = config('backup.backup.name');
 
-        $this->info("Fetch list of backups from $disk …");
+        info("Fetch list of backups from $disk …");
         $listOfBackups = collect(Storage::disk($disk)->allFiles($name))
             ->filter(fn ($file) => Str::endsWith($file, '.zip'));
 
@@ -176,7 +177,7 @@ class RestoreCommand extends Command
             return self::FAILURE;
         }
 
-        $this->info('All health checks passed.');
+        info('All health checks passed.');
 
         return self::SUCCESS;
     }
