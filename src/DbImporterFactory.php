@@ -20,11 +20,18 @@ class DbImporterFactory
      */
     public static function createFromConnection(string $dbConnectionName): DbImporter
     {
-        if (config("database.connections.$dbConnectionName") === null) {
-            throw CannotCreateDbImporter::unsupportedDriver($dbConnectionName);
+        $config = config("database.connections.$dbConnectionName");
+
+        if ($config === null) {
+            throw CannotCreateDbImporter::configNotFound($dbConnectionName);
         }
 
-        return static::forDriver($dbConnectionName);
+        return static::forDriver($config['driver']);
+    }
+
+    public static function extend(string $driver, DbImporter $callback)
+    {
+        static::$custom[$driver] = $callback;
     }
 
     /**

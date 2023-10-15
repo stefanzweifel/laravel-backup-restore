@@ -5,17 +5,20 @@ declare(strict_types=1);
 namespace Wnx\LaravelBackupRestore\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use function Laravel\Prompts\password;
 use Laravel\Prompts\Prompt;
 use function Laravel\Prompts\select;
+use Wnx\LaravelBackupRestore\Actions\CheckDependenciesAction;
 use Wnx\LaravelBackupRestore\Actions\CleanupLocalBackupAction;
 use Wnx\LaravelBackupRestore\Actions\DecompressBackupAction;
 use Wnx\LaravelBackupRestore\Actions\DownloadBackupAction;
 use Wnx\LaravelBackupRestore\Actions\ImportDumpAction;
 use Wnx\LaravelBackupRestore\Actions\ResetDatabaseAction;
 use Wnx\LaravelBackupRestore\Exceptions\CannotCreateDbImporter;
+use Wnx\LaravelBackupRestore\Exceptions\CliNotFound;
 use Wnx\LaravelBackupRestore\Exceptions\DecompressionFailed;
 use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 use Wnx\LaravelBackupRestore\Exceptions\NoBackupsFound;
@@ -41,8 +44,10 @@ class RestoreCommand extends Command
      * @throws CannotCreateDbImporter
      * @throws DecompressionFailed
      * @throws ImportFailed
+     * @throws CliNotFound
      */
     public function handle(
+        CheckDependenciesAction $checkDependenciesAction,
         DownloadBackupAction $downloadBackupAction,
         DecompressBackupAction $decompressBackupAction,
         ResetDatabaseAction $resetDatabaseAction,
@@ -55,6 +60,8 @@ class RestoreCommand extends Command
 
         $connection = $this->option('connection') ?? config('backup.backup.source.databases')[0];
 
+        $checkDependenciesAction->execute($connection);
+
         $pendingRestore = PendingRestore::make(
             disk: $this->getDestinationDiskToRestoreFrom(),
             backup: $this->getBackupToRestore($this->getDestinationDiskToRestoreFrom()),
@@ -62,7 +69,7 @@ class RestoreCommand extends Command
             backupPassword: $this->getPassword(),
         );
 
-        if (! $this->confirm("Proceed to restore \"{$pendingRestore->backup}\" using the \"{$pendingRestore->connection}\" database connection.", true)) {
+        if (! $this->confirmRestoreProcess($pendingRestore)) {
             $this->warn('Abort.');
 
             return self::INVALID;
@@ -171,5 +178,25 @@ class RestoreCommand extends Command
         $this->info('All health checks passed.');
 
         return self::SUCCESS;
+    }
+
+    private function confirmRestoreProcess(PendingRestore $pendingRestore): bool
+    {
+        $connectionConfig = config("database.connections.{$pendingRestore->connection}");
+        $connectionInformationForConfirmation = collect([
+            'Host' => Arr::get($connectionConfig, 'host'),
+            'Database' => Arr::get($connectionConfig, 'database'),
+            'username' => Arr::get($connectionConfig, 'username'),
+        ])->filter()->map(fn ($value, $key) => "{$key}: {$value}")->implode(', ');
+
+        return $this->confirm(
+            sprintf(
+                'Proceed to restore "%s" using the "%s" database connection. (%s)',
+                $pendingRestore->backup,
+                $pendingRestore->connection,
+                $connectionInformationForConfirmation
+            ),
+            true
+        );
     }
 }

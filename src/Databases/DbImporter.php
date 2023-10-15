@@ -12,6 +12,8 @@ abstract class DbImporter
 {
     abstract public function getImportCommand(string $dumpFile): string;
 
+    abstract public function getCliName(): string;
+
     /**
      * @throws ImportFailed
      */
