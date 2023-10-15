@@ -17,4 +17,9 @@ class Sqlite extends DbImporter
 
         return 'sqlite3 '.config('database.connections.sqlite.database').' < '.$dumpFile;
     }
+
+    public function getCliName(): string
+    {
+        return 'gunzip';
+    }
 }

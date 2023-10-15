@@ -8,12 +8,14 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Wnx\LaravelBackupRestore\Actions\CheckDependenciesAction;
 use Wnx\LaravelBackupRestore\Actions\CleanupLocalBackupAction;
 use Wnx\LaravelBackupRestore\Actions\DecompressBackupAction;
 use Wnx\LaravelBackupRestore\Actions\DownloadBackupAction;
 use Wnx\LaravelBackupRestore\Actions\ImportDumpAction;
 use Wnx\LaravelBackupRestore\Actions\ResetDatabaseAction;
 use Wnx\LaravelBackupRestore\Exceptions\CannotCreateDbImporter;
+use Wnx\LaravelBackupRestore\Exceptions\CliNotFound;
 use Wnx\LaravelBackupRestore\Exceptions\DecompressionFailed;
 use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 use Wnx\LaravelBackupRestore\Exceptions\NoBackupsFound;
@@ -39,8 +41,10 @@ class RestoreCommand extends Command
      * @throws CannotCreateDbImporter
      * @throws DecompressionFailed
      * @throws ImportFailed
+     * @throws CliNotFound
      */
     public function handle(
+        CheckDependenciesAction $checkDependenciesAction,
         DownloadBackupAction $downloadBackupAction,
         DecompressBackupAction $decompressBackupAction,
         ResetDatabaseAction $resetDatabaseAction,
@@ -48,6 +52,8 @@ class RestoreCommand extends Command
         CleanupLocalBackupAction $cleanupLocalBackupAction
     ): int {
         $connection = $this->option('connection') ?? config('backup.backup.source.databases')[0];
+
+        $checkDependenciesAction->execute($connection);
 
         $pendingRestore = PendingRestore::make(
             disk: $this->getDestinationDiskToRestoreFrom(),

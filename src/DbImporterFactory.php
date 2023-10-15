@@ -29,6 +29,11 @@ class DbImporterFactory
         return static::forDriver($config['driver']);
     }
 
+    public static function extend(string $driver, DbImporter $callback)
+    {
+        static::$custom[$driver] = $callback;
+    }
+
     /**
      * @throws CannotCreateDbImporter
      */
