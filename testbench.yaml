@@ -1,0 +1,2 @@
+providers:
+  - Workbench\App\BackupRestoreWorkbenchProvider
