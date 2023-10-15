@@ -10,6 +10,7 @@ use Wnx\LaravelBackupRestore\PendingRestore;
 use ZipArchive;
 
 use function Laravel\Prompts\info;
+use function Laravel\Prompts\spin;
 
 class DecompressBackupAction
 {
@@ -23,8 +24,6 @@ class DecompressBackupAction
         $pathToFileToDecompress = Storage::disk($pendingRestore->restoreDisk)
             ->path($pendingRestore->getPathToLocalCompressedBackup());
 
-        info('Extracting database dump from backup …');
-
         $zip = new ZipArchive;
         $result = $zip->open($pathToFileToDecompress);
 
@@ -33,12 +32,16 @@ class DecompressBackupAction
                 $zip->setPassword($pendingRestore->backupPassword);
             }
 
-            $extractionResult = $zip->extractTo($extractTo);
-            $zip->close();
+            spin(function () use ($pathToFileToDecompress, $extractTo, $zip) {
+                $extractionResult = $zip->extractTo($extractTo);
+                $zip->close();
 
-            if ($extractionResult === false) {
-                throw DecompressionFailed::create($extractionResult, $pathToFileToDecompress);
-            }
+                if ($extractionResult === false) {
+                    throw DecompressionFailed::create($extractionResult, $pathToFileToDecompress);
+                }
+            }, 'Extracting database dump from backup …');
+
+            info('Extracted database dump from backup.');
         } else {
             throw DecompressionFailed::create($result, $pathToFileToDecompress);
         }

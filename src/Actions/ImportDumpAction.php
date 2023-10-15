@@ -13,6 +13,7 @@ use Wnx\LaravelBackupRestore\Exceptions\NoDatabaseDumpsFound;
 use Wnx\LaravelBackupRestore\PendingRestore;
 
 use function Laravel\Prompts\info;
+use function Laravel\Prompts\spin;
 
 class ImportDumpAction
 {
@@ -34,9 +35,12 @@ class ImportDumpAction
         info('Importing database '.str('dump')->plural($dbDumps)->__toString().' …');
 
         $dbDumps->each(function ($dbDump) use ($pendingRestore, $importer) {
-            info('Importing '.str($dbDump)->afterLast('/')->__toString());
-            $absolutePathToDump = Storage::disk($pendingRestore->restoreDisk)->path($dbDump);
-            $importer->importToDatabase($absolutePathToDump);
+            spin(function () use ($importer, $dbDump, $pendingRestore) {
+                $absolutePathToDump = Storage::disk($pendingRestore->restoreDisk)->path($dbDump);
+                $importer->importToDatabase($absolutePathToDump);
+            }, message: 'Importing '.str($dbDump)->afterLast('/')->__toString());
+
+            info('Imported '.str($dbDump)->afterLast('/')->__toString());
         });
 
         event(new DatabaseRestored($pendingRestore));
