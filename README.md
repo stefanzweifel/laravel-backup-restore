@@ -7,7 +7,7 @@
 
 A package to restore a database backup created by the [spatie/laravel-backup](https://github.com/spatie/laravel-backup) package.
 
-The package requires Laravel 10.17 or higher and PHP 8.1 or higher.
+The package requires Laravel v10.17 or higher and PHP 8.1 or higher.
 
 ## Installation
 
