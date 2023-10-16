@@ -18,7 +18,8 @@
     "require": {
         "php": "^8.1",
         "ext-zip": "*",
-        "illuminate/contracts": "^10.0",
+        "illuminate/contracts": "^10.17.0",
+        "laravel/prompts": "^0.1.11",
         "spatie/laravel-backup": "^8.0",
         "spatie/laravel-package-tools": "^1.14.0",
         "spatie/temporary-directory": "^2.0"
@@ -27,7 +28,7 @@
         "laravel/pint": "^1.0",
         "nunomaduro/collision": "^6.0 || ^7.0",
         "nunomaduro/larastan": "^2.0.1",
-        "orchestra/testbench": "^8.0",
+        "orchestra/testbench": "^8.13",
         "pestphp/pest": "^1.21",
         "pestphp/pest-plugin-laravel": "^1.1",
         "pestphp/pest-plugin-watch": "1.x-dev",
@@ -44,15 +45,31 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Wnx\\LaravelBackupRestore\\Tests\\": "tests"
+            "Wnx\\LaravelBackupRestore\\Tests\\": "tests",
+            "Workbench\\App\\": "workbench/app/"
         }
     },
     "scripts": {
-        "post-autoload-dump": "@php ./vendor/bin/testbench package:discover --ansi",
+        "post-autoload-dump": [
+            "@clear",
+            "@prepare",
+            "@php ./vendor/bin/testbench package:discover --ansi"
+        ],
         "analyse": "vendor/bin/phpstan analyse",
         "test": "vendor/bin/pest",
         "test-coverage": "vendor/bin/pest --coverage",
-        "format": "vendor/bin/pint"
+        "format": "vendor/bin/pint",
+        "clear": "@php vendor/bin/testbench package:purge-skeleton --ansi",
+        "prepare": "@php vendor/bin/testbench package:discover --ansi",
+        "build": "@php vendor/bin/testbench workbench:build --ansi",
+        "serve": [
+            "@build",
+            "@php vendor/bin/testbench serve"
+        ],
+        "lint": [
+            "@php vendor/bin/pint",
+            "@php vendor/bin/phpstan analyse"
+        ]
     },
     "config": {
         "sort-packages": true,

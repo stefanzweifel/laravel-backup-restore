@@ -7,6 +7,8 @@
 
 A package to restore a database backup created by the [spatie/laravel-backup](https://github.com/spatie/laravel-backup) package.
 
+The package requires Laravel v10.17 or higher and PHP 8.1 or higher.
+
 ## Installation
 
 You can install the package via composer:
@@ -232,6 +234,14 @@ composer test
 For MySQL and PostgreSQL the package expects that a `laravel_backup_restore` database exists and is accessible to a `root`-user without using a password.
 
 You can change user, password and database by passing ENV-variables to the shell command tp run the tests … or change the settings locally to your needs. See [TestCase](https://github.com/stefanzweifel/laravel-backup-restore/blob/main/tests/TestCase.php) for details.
+
+### Testing with Testbench
+
+You can invoke the `backup:restore` command using `testbench` to test the command like you would in a Laravel application. 
+
+```php
+vendor/bin/testbench backup:restore --disk=remote
+```
 
 ## Changelog
 

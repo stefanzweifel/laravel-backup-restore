@@ -18,7 +18,7 @@ it('restores mysql database', function (string $backup, string $password = null)
         '--no-interaction' => true,
     ])
         ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"mysql-restore\" database connection. (Host: 127.0.0.1, Database: laravel_backup_restore, username: root)", true)
-        ->expectsOutput('All health checks passed.')
+        ->expectsOutputToContain('All health checks passed.')
         ->assertSuccessful();
 
     $result = DB::connection('mysql')->table('users')->count();
@@ -172,6 +172,6 @@ it('shows error message if health check after import fails', function () {
         '--reset' => true,
     ])
         ->expectsQuestion('Proceed to restore "Laravel/2023-01-28-mysql-no-compression-no-encryption-empty-dump.zip" using the "mysql" database connection. (Host: 127.0.0.1, Database: laravel_backup_restore, username: root)', true)
-        ->expectsOutput('Database has not tables after restore.')
+        ->expectsOutputToContain('Database has not tables after restore.')
         ->assertFailed();
 });

@@ -7,16 +7,21 @@ namespace Wnx\LaravelBackupRestore\Actions;
 use Illuminate\Support\Facades\Storage;
 use Wnx\LaravelBackupRestore\PendingRestore;
 
+use function Laravel\Prompts\info;
+use function Laravel\Prompts\spin;
+
 class DownloadBackupAction
 {
     public function execute(PendingRestore $pendingRestore): void
     {
-        consoleOutput()->info('Downloading backup …');
+        spin(function () use ($pendingRestore) {
+            Storage::disk($pendingRestore->restoreDisk)
+                ->writeStream(
+                    $pendingRestore->getPathToLocalCompressedBackup(),
+                    Storage::disk($pendingRestore->disk)->readStream($pendingRestore->backup)
+                );
+        }, 'Downloading backup …');
 
-        Storage::disk($pendingRestore->restoreDisk)
-            ->writeStream(
-                $pendingRestore->getPathToLocalCompressedBackup(),
-                Storage::disk($pendingRestore->disk)->readStream($pendingRestore->backup)
-            );
+        info("Backup downloaded to {$pendingRestore->getPathToLocalCompressedBackup()}.");
     }
 }
