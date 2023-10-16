@@ -8,11 +8,13 @@ use Illuminate\Support\Facades\DB;
 use Wnx\LaravelBackupRestore\Events\DatabaseReset;
 use Wnx\LaravelBackupRestore\PendingRestore;
 
+use function Laravel\Prompts\info;
+
 class ResetDatabaseAction
 {
     public function execute(PendingRestore $pendingRestore)
     {
-        consoleOutput()->info('Reset database …');
+        info('Reset database …');
 
         DB::connection($pendingRestore->connection)
             ->getSchemaBuilder()

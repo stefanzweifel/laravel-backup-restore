@@ -8,6 +8,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Laravel\Prompts\Prompt;
 use Wnx\LaravelBackupRestore\Actions\CheckDependenciesAction;
 use Wnx\LaravelBackupRestore\Actions\CleanupLocalBackupAction;
 use Wnx\LaravelBackupRestore\Actions\DecompressBackupAction;
@@ -23,6 +24,13 @@ use Wnx\LaravelBackupRestore\Exceptions\NoDatabaseDumpsFound;
 use Wnx\LaravelBackupRestore\HealthChecks\HealthCheck;
 use Wnx\LaravelBackupRestore\HealthChecks\Result;
 use Wnx\LaravelBackupRestore\PendingRestore;
+
+use function Laravel\Prompts\confirm;
+use function Laravel\Prompts\error;
+use function Laravel\Prompts\info;
+use function Laravel\Prompts\password;
+use function Laravel\Prompts\select;
+use function Laravel\Prompts\warning;
 
 class RestoreCommand extends Command
 {
@@ -51,6 +59,10 @@ class RestoreCommand extends Command
         ImportDumpAction $importDumpAction,
         CleanupLocalBackupAction $cleanupLocalBackupAction
     ): int {
+        Prompt::fallbackWhen(
+            ! $this->input->isInteractive() || windows_os() || app()->runningUnitTests()
+        );
+
         $connection = $this->option('connection') ?? config('backup.backup.source.databases')[0];
 
         $checkDependenciesAction->execute($connection);
@@ -63,12 +75,10 @@ class RestoreCommand extends Command
         );
 
         if (! $this->confirmRestoreProcess($pendingRestore)) {
-            $this->warn('Abort.');
+            warning('Abort.');
 
             return self::INVALID;
         }
-
-        consoleOutput()->setCommand($this);
 
         $downloadBackupAction->execute($pendingRestore);
         $decompressBackupAction->execute($pendingRestore);
@@ -79,7 +89,7 @@ class RestoreCommand extends Command
 
         $importDumpAction->execute($pendingRestore);
 
-        $this->info('Cleaning up …');
+        info('Cleaning up …');
         $cleanupLocalBackupAction->execute($pendingRestore);
 
         return $this->runHealthChecks($pendingRestore);
@@ -100,7 +110,7 @@ class RestoreCommand extends Command
         }
 
         // Ask user to choose a disk
-        return $this->choice(
+        return select(
             'From which disk should the backup be restored?',
             $availableDestinations,
             head($availableDestinations)
@@ -114,13 +124,13 @@ class RestoreCommand extends Command
     {
         $name = config('backup.backup.name');
 
-        $this->info("Fetch list of backups from $disk …");
+        info("Fetch list of backups from $disk …");
         $listOfBackups = collect(Storage::disk($disk)->allFiles($name))
             ->filter(fn ($file) => Str::endsWith($file, '.zip'));
 
         if ($listOfBackups->count() === 0) {
             if (isset($disk)) {
-                $this->error("No backups found on {$disk}.");
+                error("No backups found on {$disk}.");
             }
             throw NoBackupsFound::onDisk($disk);
         }
@@ -133,10 +143,11 @@ class RestoreCommand extends Command
             return $this->option('backup');
         }
 
-        return $this->choice(
-            'Which backup should be restored?',
-            $listOfBackups->toArray(),
-            $listOfBackups->last()
+        return select(
+            label: 'Which backup should be restored?',
+            options: $listOfBackups->mapWithKeys(fn ($backup) => [$backup => $backup]),
+            default: $listOfBackups->last(),
+            scroll: 10
         );
     }
 
@@ -146,10 +157,10 @@ class RestoreCommand extends Command
             $password = $this->option('password');
         } elseif ($this->option('no-interaction')) {
             $password = config('backup.backup.password');
-        } elseif ($this->confirm('Use encryption password from config?', true)) {
+        } elseif (confirm('Use encryption password from config?', true)) {
             $password = config('backup.backup.password');
         } else {
-            $password = $this->secret('What is the password to decrypt the backup? (leave empty if not encrypted)');
+            $password = password('What is the password to decrypt the backup? (leave empty if not encrypted)');
         }
 
         return $password;
@@ -163,12 +174,12 @@ class RestoreCommand extends Command
             ->filter(fn (Result $result) => $result->status === self::FAILURE);
 
         if ($failedResults->count() > 0) {
-            $failedResults->each(fn (Result $result) => $this->error($result->message));
+            $failedResults->each(fn (Result $result) => error($result->message));
 
             return self::FAILURE;
         }
 
-        $this->info('All health checks passed.');
+        info('All health checks passed.');
 
         return self::SUCCESS;
     }
@@ -182,14 +193,14 @@ class RestoreCommand extends Command
             'username' => Arr::get($connectionConfig, 'username'),
         ])->filter()->map(fn ($value, $key) => "{$key}: {$value}")->implode(', ');
 
-        return $this->confirm(
-            sprintf(
+        return confirm(
+            label: sprintf(
                 'Proceed to restore "%s" using the "%s" database connection. (%s)',
                 $pendingRestore->backup,
                 $pendingRestore->connection,
                 $connectionInformationForConfirmation
             ),
-            true
+            default: true
         );
     }
 }
