@@ -5,7 +5,26 @@ All notable changes to `laravel-backup-restore` will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.0.2...HEAD)
+## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.1.0...HEAD)
+
+## [v1.1.0](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.0.2...v1.1.0) - 2023-10-16
+
+### Added
+
+- Add Support for PHP 8.3 ([#31](https://github.com/stefanzweifel/laravel-backup-restore/pull/31))
+
+### Changed
+
+- Replace Symfony Process with Illuminate Process ([#30](https://github.com/stefanzweifel/laravel-backup-restore/pull/30))
+- Update Artisan Command to use Laravel Prompts ([#19](https://github.com/stefanzweifel/laravel-backup-restore/pull/19))
+
+### Removed
+
+- Drop Support for Laravel 9 ([#29](https://github.com/stefanzweifel/laravel-backup-restore/pull/29))
+
+### Fixed
+
+- Check if CLI Dependencies are available before starting restore process ([#28](https://github.com/stefanzweifel/laravel-backup-restore/pull/28))
 
 ## v1.0.2 - 2023-08-22
 
