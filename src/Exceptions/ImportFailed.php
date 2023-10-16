@@ -5,28 +5,28 @@ declare(strict_types=1);
 namespace Wnx\LaravelBackupRestore\Exceptions;
 
 use Exception;
-use Symfony\Component\Process\Process;
+use Illuminate\Contracts\Process\ProcessResult;
 
 class ImportFailed extends Exception
 {
-    public static function processDidNotEndSuccessfully(Process $process): static
+    public static function processDidNotEndSuccessfully(ProcessResult $process): static
     {
         $processOutput = static::formatProcessOutput($process);
 
         return new static("The import process failed with a none successful exitcode.{$processOutput}");
     }
 
-    protected static function formatProcessOutput(Process $process): string
+    protected static function formatProcessOutput(ProcessResult $process): string
     {
-        $output = $process->getOutput() ?: '<no output>';
-        $errorOutput = $process->getErrorOutput() ?: '<no output>';
-        $exitCodeText = $process->getExitCodeText() ?: '<no exit text>';
+        $output = $process->output() ?: '<no output>';
+        $errorOutput = $process->errorOutput() ?: '<no output>';
+        $exitCodeText = $process->exitCode() ?: '<no exit text>';
 
         return <<<CONSOLE
 
             Exitcode
             ========
-            {$process->getExitCode()}: {$exitCodeText}
+            {$process->exitCode()}: {$exitCodeText}
 
             Output
             ======

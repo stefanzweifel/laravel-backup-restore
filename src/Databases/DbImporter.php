@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Wnx\LaravelBackupRestore\Databases;
 
-use Symfony\Component\Process\Process;
+use Illuminate\Contracts\Process\ProcessResult;
+use Illuminate\Support\Facades\Process;
 use Wnx\LaravelBackupRestore\Events\DatabaseDumpImportWasSuccessful;
 use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 
@@ -17,9 +18,9 @@ abstract class DbImporter
     /**
      * @throws ImportFailed
      */
-    protected function checkIfImportWasSuccessful(Process $process, string $dumpFile): void
+    protected function checkIfImportWasSuccessful(ProcessResult $process, string $dumpFile): void
     {
-        if (! $process->isSuccessful()) {
+        if (! $process->successful()) {
             throw ImportFailed::processDidNotEndSuccessfully($process);
         }
 
@@ -31,17 +32,8 @@ abstract class DbImporter
      */
     public function importToDatabase(string $dumpFile): void
     {
-        $process = $this->getProcess($dumpFile);
-
-        $process->run();
+        $process = Process::run($this->getImportCommand($dumpFile));
 
         $this->checkIfImportWasSuccessful($process, $dumpFile);
-    }
-
-    protected function getProcess(string $dumpFile): Process
-    {
-        $command = $this->getImportCommand($dumpFile);
-
-        return Process::fromShellCommandline($command, null, null, null, 0);
     }
 }
