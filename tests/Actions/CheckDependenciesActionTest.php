@@ -15,7 +15,7 @@ it('does not throw exception for supported database drivers', function ($connect
 it('throws exception if CLI dependency for given connection can not be found', function () {
     DbImporterFactory::extend('sqlsrv', new class() extends DbImporter
     {
-        public function getImportCommand(string $dumpFile): string
+        public function getImportCommand(string $dumpFile, string $connection): string
         {
             return '';
         }

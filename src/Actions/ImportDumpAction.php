@@ -37,7 +37,7 @@ class ImportDumpAction
         $dbDumps->each(function ($dbDump) use ($pendingRestore, $importer) {
             spin(function () use ($importer, $dbDump, $pendingRestore) {
                 $absolutePathToDump = Storage::disk($pendingRestore->restoreDisk)->path($dbDump);
-                $importer->importToDatabase($absolutePathToDump);
+                $importer->importToDatabase($absolutePathToDump, $pendingRestore->connection);
             }, message: 'Importing '.str($dbDump)->afterLast('/')->__toString());
 
             info('Imported '.str($dbDump)->afterLast('/')->__toString());

@@ -11,7 +11,7 @@ use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 
 abstract class DbImporter
 {
-    abstract public function getImportCommand(string $dumpFile): string;
+    abstract public function getImportCommand(string $dumpFile, string $connection): string;
 
     abstract public function getCliName(): string;
 
@@ -30,9 +30,9 @@ abstract class DbImporter
     /**
      * @throws ImportFailed
      */
-    public function importToDatabase(string $dumpFile): void
+    public function importToDatabase(string $dumpFile, string $connection): void
     {
-        $process = Process::run($this->getImportCommand($dumpFile));
+        $process = Process::run($this->getImportCommand($dumpFile, $connection));
 
         $this->checkIfImportWasSuccessful($process, $dumpFile);
     }

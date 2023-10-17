@@ -12,19 +12,18 @@ class PostgreSql extends DbImporter
     /**
      * @throws CannotCreateDbDumper
      */
-    public function getImportCommand(string $dumpFile): string
+    public function getImportCommand(string $dumpFile, string $connection): string
     {
         /** @var \Spatie\DbDumper\Databases\PostgreSql $dumper */
-        $dumper = DbDumperFactory::createFromConnection('pgsql');
+        $dumper = DbDumperFactory::createFromConnection($connection);
         $dumper->getContentsOfCredentialsFile();
 
         // @todo: Improve detection of compressed files
-        // @todo: Use $pendingRestore->connection
         if (str($dumpFile)->endsWith('gz')) {
-            return 'gunzip -c '.$dumpFile.' | psql -U '.config('database.connections.pgsql.username').' -d '.config('database.connections.pgsql.database');
+            return 'gunzip -c '.$dumpFile.' | psql -U '.config("database.connections.{$connection}.username").' -d '.config("database.connections.{$connection}.database");
         }
 
-        return 'psql -U '.config('database.connections.pgsql.username').' -d '.config('database.connections.pgsql.database').' < '.$dumpFile;
+        return 'psql -U '.config("database.connections.{$connection}.username").' -d '.config("database.connections.{$connection}.database").' < '.$dumpFile;
     }
 
     public function getCliName(): string

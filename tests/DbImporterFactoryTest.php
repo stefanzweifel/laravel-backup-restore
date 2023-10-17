@@ -38,7 +38,7 @@ it('returns db importer instances for given database driver', function ($connect
 it('returns custom db importer instance for the given database driver', function () {
     DbImporterFactory::extend('sqlsrv', new class() extends DbImporter
     {
-        public function getImportCommand(string $dumpFile): string
+        public function getImportCommand(string $dumpFile, string $connection): string
         {
             return 'import-command';
         }
@@ -51,7 +51,7 @@ it('returns custom db importer instance for the given database driver', function
 
     $instance = DbImporterFactory::createFromConnection('unsupported-driver');
 
-    expect($instance->getImportCommand('path/to/dump/file'))->toEqual('import-command');
+    expect($instance->getImportCommand('path/to/dump/file', 'connection'))->toEqual('import-command');
 });
 
 it('throws exception if no db importer instance can be created for connection')

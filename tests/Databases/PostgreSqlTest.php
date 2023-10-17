@@ -11,7 +11,7 @@ use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 it('imports pgsql dump', function (string $dumpFile) {
     Event::fake();
 
-    app(PostgreSql::class)->importToDatabase($dumpFile);
+    app(PostgreSql::class)->importToDatabase($dumpFile, 'pgsql');
 
     Event::assertDispatched(function (DatabaseDumpImportWasSuccessful $event) use ($dumpFile) {
         return $event->absolutePathToDump === $dumpFile;
@@ -25,6 +25,6 @@ it('imports pgsql dump', function (string $dumpFile) {
 ])->group('pgsql');
 
 it('throws import failed exception if pgsql dump could not be imported')
-    ->tap(fn () => app(PostgreSql::class)->importToDatabase('file-does-not-exist'))
+    ->tap(fn () => app(PostgreSql::class)->importToDatabase('file-does-not-exist', 'pgsql'))
     ->throws(ImportFailed::class)
     ->group('pgsql');

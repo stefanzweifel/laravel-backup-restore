@@ -11,7 +11,7 @@ use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 it('imports sqlite dump', function (string $dumpFile) {
     Event::fake();
 
-    app(Sqlite::class)->importToDatabase($dumpFile);
+    app(Sqlite::class)->importToDatabase($dumpFile, 'sqlite');
 
     Event::assertDispatched(function (DatabaseDumpImportWasSuccessful $event) use ($dumpFile) {
         return $event->absolutePathToDump === $dumpFile;
@@ -25,5 +25,5 @@ it('imports sqlite dump', function (string $dumpFile) {
 ]);
 
 it('throws import failed exception if sqlite dump could not be imported')
-    ->tap(fn () => app(Sqlite::class)->importToDatabase('file-does-not-exist'))
+    ->tap(fn () => app(Sqlite::class)->importToDatabase('file-does-not-exist', 'sqlite'))
     ->throws(ImportFailed::class);
