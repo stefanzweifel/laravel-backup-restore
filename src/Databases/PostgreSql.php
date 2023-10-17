@@ -12,10 +12,10 @@ class PostgreSql extends DbImporter
     /**
      * @throws CannotCreateDbDumper
      */
-    public function getImportCommand(string $dumpFile): string
+    public function getImportCommand(string $dumpFile, string $connection): string
     {
         /** @var \Spatie\DbDumper\Databases\PostgreSql $dumper */
-        $dumper = DbDumperFactory::createFromConnection('pgsql');
+        $dumper = DbDumperFactory::createFromConnection($connection);
         $dumper->getContentsOfCredentialsFile();
 
         // @todo: Improve detection of compressed files
