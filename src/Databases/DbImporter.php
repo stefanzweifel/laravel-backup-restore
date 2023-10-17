@@ -32,7 +32,7 @@ abstract class DbImporter
      */
     public function importToDatabase(string $dumpFile, string $connection): void
     {
-        $process = Process::run($this->getImportCommand($dumpFile. $connection));
+        $process = Process::run($this->getImportCommand($dumpFile, $connection));
 
         $this->checkIfImportWasSuccessful($process, $dumpFile);
     }
