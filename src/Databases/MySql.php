@@ -11,7 +11,7 @@ class MySql extends DbImporter
 {
     private TemporaryDirectory $temporaryDirectory;
 
-    public function getImportCommand(string $dumpFile): string
+    public function getImportCommand(string $dumpFile, string $connection): string
     {
         $temporaryDirectoryPath = config('backup.backup.temporary_directory') ?? storage_path('app/backup-temp');
 
@@ -21,11 +21,8 @@ class MySql extends DbImporter
             ->create()
             ->empty();
 
-        $dumper = DbDumperFactory::createFromConnection('mysql');
+        $dumper = DbDumperFactory::createFromConnection($connection);
         $importToDatabase = $dumper->getDbName();
-
-        // @todo: Use $pendingRestore->connection
-        // $importToDatabase = $pendingRestore->database;
 
         file_put_contents($this->temporaryDirectory->path('credentials.dat'), $dumper->getContentsOfCredentialsFile());
 
