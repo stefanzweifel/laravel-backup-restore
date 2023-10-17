@@ -11,7 +11,7 @@ use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 it('imports mysql dump', function (string $dumpFile) {
     Event::fake();
 
-    app(MySql::class)->importToDatabase($dumpFile, 'myql');
+    app(MySql::class)->importToDatabase($dumpFile, 'mysql');
 
     Event::assertDispatched(function (DatabaseDumpImportWasSuccessful $event) use ($dumpFile) {
         return $event->absolutePathToDump === $dumpFile;
