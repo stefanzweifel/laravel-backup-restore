@@ -35,6 +35,10 @@ jobs:
       - name: Create laravel_backup_restore database
         run: |
           mysql -uroot -e "CREATE DATABASE laravel_backup_restore;"
+      
+      - name: Check if laravel_backup_restore database exists
+        run: |
+          mysql -uroot -e "SHOW DATABASES LIKE 'laravel_backup_restore';"
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
