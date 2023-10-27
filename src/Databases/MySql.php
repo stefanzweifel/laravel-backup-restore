@@ -13,7 +13,7 @@ class MySql extends DbImporter
 
     public function getImportCommand(string $dumpFile, string $connection): string
     {
-        $temporaryDirectoryPath = config('backup.backup.temporary_directory') ?? storage_path('app/backup-temp');
+        $temporaryDirectoryPath = config('backup.backup.temporary_directory') ?? storage_path('app'.DIRECTORY_SEPARATOR.'backup-temp');
 
         $this->temporaryDirectory = (new TemporaryDirectory($temporaryDirectoryPath))
             ->name('temp')
