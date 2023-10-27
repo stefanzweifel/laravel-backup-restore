@@ -43,33 +43,33 @@ class PendingRestore
     {
         $filename = "$this->restoreId.{$this->getFileExtensionOfRemoteBackup()}";
 
-        return "backup-restore-temp/$filename";
+        return 'backup-restore-temp'.DIRECTORY_SEPARATOR.$filename;
     }
 
     public function getPathToLocalDecompressedBackup(): string
     {
         $filename = $this->restoreId;
 
-        return "backup-restore-temp/$filename";
+        return 'backup-restore-temp'.DIRECTORY_SEPARATOR.$filename;
     }
 
     public function getAbsolutePathToLocalDecompressedBackup(): string
     {
         $filename = $this->restoreId;
 
-        return storage_path("app/backup-restore-temp/$filename");
+        return storage_path('app'.DIRECTORY_SEPARATOR.'backup-restore-temp'.DIRECTORY_SEPARATOR.$filename);
     }
 
     public function hasNoDbDumpsDirectory(): bool
     {
         return ! Storage::disk($this->restoreDisk)
-            ->has("{$this->getPathToLocalDecompressedBackup()}/db-dumps");
+            ->has($this->getPathToLocalDecompressedBackup().DIRECTORY_SEPARATOR.'db-dumps');
     }
 
     public function getAvailableDbDumps(): Collection
     {
         $files = Storage::disk($this->restoreDisk)
-            ->files("{$this->getPathToLocalDecompressedBackup()}/db-dumps");
+            ->files($this->getPathToLocalDecompressedBackup().DIRECTORY_SEPARATOR.'db-dumps');
 
         return collect($files)
             ->filter(fn ($file) => Str::endsWith($file, ['.sql', '.sql.gz']));
