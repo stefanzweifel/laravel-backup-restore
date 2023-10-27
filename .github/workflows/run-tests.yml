@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest]
         php: [8.3, 8.2, 8.1]
         laravel: [10.*]
         stability: [prefer-lowest, prefer-stable]
@@ -21,24 +21,21 @@ jobs:
             testbench: ^8.13
             carbon: ^2.63
 
+    services:
+      mysql:
+        image: mysql:latest
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: laravel_backup_restore
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
     name: P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.stability }} - ${{ matrix.os }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - uses: shogo82148/actions-setup-mysql@v1
-        with:
-          mysql-version: "8.0"
-          password: password
-
-      - name: Create laravel_backup_restore database
-        run: |
-          mysql -uroot -e "CREATE DATABASE laravel_backup_restore;"
-      
-      - name: Check if laravel_backup_restore database exists
-        run: |
-          mysql -uroot -e "SHOW DATABASES LIKE 'laravel_backup_restore';"
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
