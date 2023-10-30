@@ -41,8 +41,8 @@ abstract class DbImporter
 
     public function setDumpBinaryPath(string $dumpBinaryPath): self
     {
-        if ($dumpBinaryPath !== '' && ! str_ends_with($dumpBinaryPath, '/')) {
-            $dumpBinaryPath .= '/';
+        if ($dumpBinaryPath !== '' && ! str_ends_with($dumpBinaryPath, DIRECTORY_SEPARATOR)) {
+            $dumpBinaryPath .= DIRECTORY_SEPARATOR;
         }
 
         $this->dumpBinaryPath = $dumpBinaryPath;
