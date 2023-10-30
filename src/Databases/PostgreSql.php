@@ -14,16 +14,31 @@ class PostgreSql extends DbImporter
      */
     public function getImportCommand(string $dumpFile, string $connection): string
     {
+        if (config("database.connections.{$connection}.dump.dump_binary_path")) {
+            $this->setDumpBinaryPath(config("database.connections.{$connection}.dump.dump_binary_path"));
+        }
+
         /** @var \Spatie\DbDumper\Databases\PostgreSql $dumper */
         $dumper = DbDumperFactory::createFromConnection($connection);
         $dumper->getContentsOfCredentialsFile();
 
         // @todo: Improve detection of compressed files
         if (str($dumpFile)->endsWith('gz')) {
-            return 'gunzip -c '.$dumpFile.' | psql -U '.config("database.connections.{$connection}.username").' -d '.config("database.connections.{$connection}.database");
+            return collect([
+                'gunzip -c '.$dumpFile,
+                '|',
+                $this->dumpBinaryPath.'psql',
+                '-U '.config("database.connections.{$connection}.username"),
+                '-d '.config("database.connections.{$connection}.database"),
+            ])->implode(' ');
         }
 
-        return 'psql -U '.config("database.connections.{$connection}.username").' -d '.config("database.connections.{$connection}.database").' < '.$dumpFile;
+        return collect([
+            $this->dumpBinaryPath.'psql',
+            '-U '.config("database.connections.{$connection}.username"),
+            '-d '.config("database.connections.{$connection}.database"),
+            '< '.$dumpFile,
+        ])->implode(' ');
     }
 
     public function getCliName(): string
