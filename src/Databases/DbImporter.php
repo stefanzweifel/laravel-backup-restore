@@ -11,6 +11,8 @@ use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 
 abstract class DbImporter
 {
+    protected string $dumpBinaryPath = '';
+
     abstract public function getImportCommand(string $dumpFile, string $connection): string;
 
     abstract public function getCliName(): string;
@@ -35,5 +37,26 @@ abstract class DbImporter
         $process = Process::run($this->getImportCommand($dumpFile, $connection));
 
         $this->checkIfImportWasSuccessful($process, $dumpFile);
+    }
+
+    public function setDumpBinaryPath(string $dumpBinaryPath): self
+    {
+        if ($dumpBinaryPath !== '' && ! str_ends_with($dumpBinaryPath, '/')) {
+            $dumpBinaryPath .= '/';
+        }
+
+        $this->dumpBinaryPath = $dumpBinaryPath;
+
+        return $this;
+    }
+
+    protected function determineQuote(): string
+    {
+        return $this->isWindows() ? '"' : "'";
+    }
+
+    protected function isWindows(): bool
+    {
+        return str_starts_with(strtoupper(PHP_OS), 'WIN');
     }
 }
