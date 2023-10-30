@@ -21,6 +21,10 @@ class MySql extends DbImporter
             ->create()
             ->empty();
 
+        if (config("database.connections.{$connection}.dump.dump_binary_path")) {
+            $this->setDumpBinaryPath(config("database.connections.{$connection}.dump.dump_binary_path"));
+        }
+
         $dumper = DbDumperFactory::createFromConnection($connection);
         $importToDatabase = $dumper->getDbName();
 
@@ -45,20 +49,24 @@ class MySql extends DbImporter
 
     private function getMySqlImportCommandForCompressedDump(string $storagePathToDatabaseFile, mixed $temporaryCredentialsFile, string $importToDatabase): string
     {
+        $quote = $this->determineQuote();
+
         return collect([
             "gunzip < {$storagePathToDatabaseFile}",
             '|',
-            'mysql',
-            "--defaults-extra-file=\"{$temporaryCredentialsFile}\"",
+            "{$quote}{$this->dumpBinaryPath}mysql{$quote}",
+            "--defaults-extra-file={$quote}{$temporaryCredentialsFile}{$quote}",
             $importToDatabase,
         ])->implode(' ');
     }
 
     private function getMySqlImportCommandForUncompressedDump(mixed $temporaryCredentialsFile, string $importToDatabase, string $storagePathToDatabaseFile): string
     {
+        $quote = $this->determineQuote();
+
         return collect([
-            'mysql',
-            "--defaults-extra-file=\"{$temporaryCredentialsFile}\"",
+            "{$quote}{$this->dumpBinaryPath}mysql{$quote}",
+            "--defaults-extra-file={$quote}{$temporaryCredentialsFile}{$quote}",
             $importToDatabase,
             '<',
             $storagePathToDatabaseFile,
