@@ -65,6 +65,7 @@ class RestoreCommand extends Command
 
         $connection = $this->option('connection') ?? config('backup.backup.source.databases')[0];
 
+        // Dependencies-check is currently disabled. Custom binary paths are currently not supported by the Action.
         // $checkDependenciesAction->execute($connection);
 
         $pendingRestore = PendingRestore::make(
