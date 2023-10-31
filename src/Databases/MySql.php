@@ -4,23 +4,16 @@ declare(strict_types=1);
 
 namespace Wnx\LaravelBackupRestore\Databases;
 
+use Spatie\Backup\Exceptions\CannotCreateDbDumper;
 use Spatie\Backup\Tasks\Backup\DbDumperFactory;
-use Spatie\TemporaryDirectory\TemporaryDirectory;
 
 class MySql extends DbImporter
 {
-    private TemporaryDirectory $temporaryDirectory;
-
+    /**
+     * @throws CannotCreateDbDumper
+     */
     public function getImportCommand(string $dumpFile, string $connection): string
     {
-        $temporaryDirectoryPath = config('backup.backup.temporary_directory') ?? storage_path('app'.DIRECTORY_SEPARATOR.'backup-temp');
-
-        $this->temporaryDirectory = (new TemporaryDirectory($temporaryDirectoryPath))
-            ->name('temp')
-            ->force()
-            ->create()
-            ->empty();
-
         if (config("database.connections.{$connection}.dump.dump_binary_path")) {
             $this->setDumpBinaryPath(config("database.connections.{$connection}.dump.dump_binary_path"));
         }
@@ -28,15 +21,18 @@ class MySql extends DbImporter
         $dumper = DbDumperFactory::createFromConnection($connection);
         $importToDatabase = $dumper->getDbName();
 
-        file_put_contents($this->temporaryDirectory->path('credentials.dat'), $dumper->getContentsOfCredentialsFile());
-
-        $temporaryCredentialsFile = $this->temporaryDirectory->path('credentials.dat');
+        $credentialsArray = [
+            'host' => config("database.connections.{$connection}.host"),
+            'port' => config("database.connections.{$connection}.port"),
+            'user' => config("database.connections.{$connection}.username"),
+            'password' => config("database.connections.{$connection}.password"),
+        ];
 
         // Build Shell Command to import a gzipped SQL file to a MySQL database
         if (str($dumpFile)->endsWith('gz')) {
-            $command = $this->getMySqlImportCommandForCompressedDump($dumpFile, $temporaryCredentialsFile, $importToDatabase);
+            $command = $this->getMySqlImportCommandForCompressedDump($dumpFile, $importToDatabase, $credentialsArray);
         } else {
-            $command = $this->getMySqlImportCommandForUncompressedDump($temporaryCredentialsFile, $importToDatabase, $dumpFile);
+            $command = $this->getMySqlImportCommandForUncompressedDump($importToDatabase, $dumpFile, $credentialsArray);
         }
 
         return $command;
@@ -47,29 +43,37 @@ class MySql extends DbImporter
         return 'mysql';
     }
 
-    private function getMySqlImportCommandForCompressedDump(string $storagePathToDatabaseFile, mixed $temporaryCredentialsFile, string $importToDatabase): string
+    private function getMySqlImportCommandForCompressedDump(string $storagePathToDatabaseFile, string $importToDatabase, array $credentials): string
     {
         $quote = $this->determineQuote();
+        $password = $this->decryptIfEncrypted($credentials['password']);
 
         return collect([
             "gunzip < {$storagePathToDatabaseFile}",
             '|',
             "{$quote}{$this->dumpBinaryPath}mysql{$quote}",
-            "--defaults-extra-file={$quote}{$temporaryCredentialsFile}{$quote}",
+            '-u', $credentials['user'],
+            ! empty($password) ? "{$quote}-p'{$password}'{$quote}" : '',
+            '-P', $credentials['port'],
+            isset($credentials['host']) ? '-h '.$credentials['host'] : '',
             $importToDatabase,
-        ])->implode(' ');
+        ])->filter()->implode(' ');
     }
 
-    private function getMySqlImportCommandForUncompressedDump(mixed $temporaryCredentialsFile, string $importToDatabase, string $storagePathToDatabaseFile): string
+    private function getMySqlImportCommandForUncompressedDump(string $importToDatabase, string $storagePathToDatabaseFile, array $credentials): string
     {
         $quote = $this->determineQuote();
+        $password = $this->decryptIfEncrypted($credentials['password']);
 
         return collect([
             "{$quote}{$this->dumpBinaryPath}mysql{$quote}",
-            "--defaults-extra-file={$quote}{$temporaryCredentialsFile}{$quote}",
+            '-u', $credentials['user'],
+            ! empty($password) ? "{$quote}-p'{$password}'{$quote}" : '',
+            '-P', $credentials['port'],
+            isset($credentials['host']) ? '-h '.$credentials['host'] : '',
             $importToDatabase,
             '<',
             $storagePathToDatabaseFile,
-        ])->implode(' ');
+        ])->filter()->implode(' ');
     }
 }
