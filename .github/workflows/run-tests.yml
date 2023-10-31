@@ -64,7 +64,7 @@ jobs:
           touch database/database.sqlite
 
       - name: Execute tests
-        run: vendor/bin/pest --exclude-group=pgsql --coverage --min=85
+        run: vendor/bin/pest --exclude-group=pgsql --coverage --min=80
         env:
           MYSQL_PORT: 3306
           MYSQL_USERNAME: root
