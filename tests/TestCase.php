@@ -47,6 +47,18 @@ class TestCase extends Orchestra
             'password' => env('MYSQL_PASSWORD', ''),
         ]);
 
+        $app['config']->set('database.connections.mysql-restore-binary-path', [
+            'driver' => 'mysql',
+            'host' => env('MYSQL_HOST', '127.0.0.1'),
+            'port' => env('MYSQL_PORT', '3306'),
+            'database' => env('MYSQL_DATABASE', 'laravel_backup_restore'),
+            'username' => env('MYSQL_USERNAME', 'root'),
+            'password' => env('MYSQL_PASSWORD', ''),
+            'dump' => [
+                'dump_binary_path' => env('MYSQL_BINARY_PATH', '/usr/bin/'),
+            ],
+        ]);
+
         $app['config']->set('database.connections.pgsql', [
             'driver' => 'pgsql',
             'host' => env('PGSQL_HOST', '127.0.0.1'),
@@ -64,6 +76,18 @@ class TestCase extends Orchestra
             'username' => env('PGSQL_USERNAME', 'root'),
             'password' => env('PGSQL_PASSWORD', ''),
             'search_path' => 'public',
+        ]);
+        $app['config']->set('database.connections.pgsql-restore-binary-path', [
+            'driver' => 'pgsql',
+            'host' => env('PGSQL_HOST', '127.0.0.1'),
+            'port' => env('PGSQL_PORT', '5432'),
+            'database' => env('PGSQL_DATABASE', 'laravel_backup_restore'),
+            'username' => env('PGSQL_USERNAME', 'root'),
+            'password' => env('PGSQL_PASSWORD', ''),
+            'search_path' => 'public',
+            'dump' => [
+                'dump_binary_path' => env('PGSQL_BINARY_PATH', '/usr/bin/'),
+            ],
         ]);
 
         $app['config']->set('database.connections.unsupported-driver', [
