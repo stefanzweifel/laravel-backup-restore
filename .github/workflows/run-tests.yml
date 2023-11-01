@@ -63,6 +63,9 @@ jobs:
           mkdir database
           touch database/database.sqlite
 
+      - name: Generate app key
+        run: vendor/bin/testbench key:generate --force
+
       - name: Execute tests
         run: vendor/bin/pest --exclude-group=pgsql --coverage --min=80
         env:
