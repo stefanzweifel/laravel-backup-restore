@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Wnx\LaravelBackupRestore\Databases;
 
-use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Contracts\Process\ProcessResult;
 use Illuminate\Support\Facades\Process;
 use Wnx\LaravelBackupRestore\Events\DatabaseDumpImportWasSuccessful;
@@ -59,14 +58,5 @@ abstract class DbImporter
     protected function isWindows(): bool
     {
         return str_starts_with(strtoupper(PHP_OS), 'WIN');
-    }
-
-    protected function decryptIfEncrypted($value)
-    {
-        try {
-            return decrypt($value);
-        } catch (DecryptException $e) {
-            return $value;
-        }
     }
 }

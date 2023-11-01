@@ -46,7 +46,7 @@ class MySql extends DbImporter
     private function getMySqlImportCommandForCompressedDump(string $storagePathToDatabaseFile, string $importToDatabase, array $credentials): string
     {
         $quote = $this->determineQuote();
-        $password = $this->decryptIfEncrypted($credentials['password']);
+        $password = $credentials['password'];
 
         return collect([
             "gunzip < {$storagePathToDatabaseFile}",
@@ -63,7 +63,7 @@ class MySql extends DbImporter
     private function getMySqlImportCommandForUncompressedDump(string $importToDatabase, string $storagePathToDatabaseFile, array $credentials): string
     {
         $quote = $this->determineQuote();
-        $password = $this->decryptIfEncrypted($credentials['password']);
+        $password = $credentials['password'];
 
         return collect([
             "{$quote}{$this->dumpBinaryPath}mysql{$quote}",
