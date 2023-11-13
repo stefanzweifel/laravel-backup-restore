@@ -5,7 +5,13 @@ All notable changes to `laravel-backup-restore` will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.1.3...HEAD)
+## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.1.4...HEAD)
+
+## [v1.1.4](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.1.3...v1.1.4) - 2023-11-13
+
+### Fixed
+
+- Add --host Option to psql command ([#46](https://github.com/stefanzweifel/laravel-backup-restore/pull/46))
 
 ## [v1.1.3](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.1.2...v1.1.3) - 2023-11-01
 
