@@ -28,6 +28,7 @@ class PostgreSql extends DbImporter
                 'gunzip -c '.$dumpFile,
                 '|',
                 $this->dumpBinaryPath.'psql',
+                '-h '.config("database.connections.{$connection}.host"),
                 '-U '.config("database.connections.{$connection}.username"),
                 '-d '.config("database.connections.{$connection}.database"),
             ])->implode(' ');
@@ -35,6 +36,7 @@ class PostgreSql extends DbImporter
 
         return collect([
             $this->dumpBinaryPath.'psql',
+            '-h '.config("database.connections.{$connection}.host"),
             '-U '.config("database.connections.{$connection}.username"),
             '-d '.config("database.connections.{$connection}.database"),
             '< '.$dumpFile,
