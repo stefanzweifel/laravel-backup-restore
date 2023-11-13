@@ -35,8 +35,9 @@ class PostgreSql extends DbImporter
 
         return collect([
             $this->dumpBinaryPath.'psql',
-            '-U '.config("database.connections.{$connection}.username"),
-            '-d '.config("database.connections.{$connection}.database"),
+            'postgresql://'.config("database.connections.{$connection}.username").
+                       ':'.config("database.connections.{$connection}.password").'@'.config("database.connections.{$connection}.host").':'
+                       .config("database.connections.{$connection}.port").'/'.config("database.connections.{$connection}.database"),
             '< '.$dumpFile,
         ])->implode(' ');
     }
