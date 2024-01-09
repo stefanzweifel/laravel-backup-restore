@@ -5,7 +5,17 @@ All notable changes to `laravel-backup-restore` will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.1.4...HEAD)
+## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.1.5...HEAD)
+
+## [v1.1.5](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.1.4...v1.1.5) - 2024-01-09
+
+### Changed
+
+- Upgrade Pest to v2 ([#50](https://github.com/stefanzweifel/laravel-backup-restore/pull/50))
+
+### Fixed
+
+- Disable Process Timeout when importing Database backup ([#55](https://github.com/stefanzweifel/laravel-backup-restore/pull/55))
 
 ## [v1.1.4](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.1.3...v1.1.4) - 2023-11-13
 
