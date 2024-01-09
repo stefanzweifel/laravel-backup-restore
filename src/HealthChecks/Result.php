@@ -30,7 +30,7 @@ class Result
         return $this;
     }
 
-    public function failed(string $message = null): self
+    public function failed(?string $message = null): self
     {
         $this->status = Command::FAILURE;
 
