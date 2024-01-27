@@ -72,6 +72,6 @@ class PendingRestore
             ->files($this->getPathToLocalDecompressedBackup().DIRECTORY_SEPARATOR.'db-dumps');
 
         return collect($files)
-            ->filter(fn ($file) => Str::endsWith($file, ['.sql', '.sql.gz']));
+            ->filter(fn ($file) => Str::endsWith($file, ['.sql', '.sql.gz', '.sql.bz2']));
     }
 }
