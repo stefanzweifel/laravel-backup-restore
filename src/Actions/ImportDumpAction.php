@@ -24,13 +24,13 @@ class ImportDumpAction
      */
     public function execute(PendingRestore $pendingRestore): void
     {
-        if ($pendingRestore->hasNoDbDumpsDirectory()) {
+        $dbDumps = $pendingRestore->getAvailableDbDumps();
+
+        if ($dbDumps->isEmpty()) {
             throw NoDatabaseDumpsFound::notFoundInBackup($pendingRestore);
         }
 
         $importer = DbImporterFactory::createFromConnection($pendingRestore->connection);
-
-        $dbDumps = $pendingRestore->getAvailableDbDumps();
 
         info('Importing database '.str('dump')->plural($dbDumps)->__toString().' …');
 
