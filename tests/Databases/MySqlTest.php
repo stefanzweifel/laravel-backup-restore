@@ -26,6 +26,7 @@ it('imports mysql dump', function (string $dumpFile) {
 })->with([
     __DIR__.'/../storage/Laravel/2023-01-28-mysql-no-compression-no-encryption.sql',
     __DIR__.'/../storage/Laravel/2023-01-28-mysql-compression-no-encryption.sql.gz',
+    __DIR__.'/../storage/Laravel/2023-01-28-mysql-bz2-compression-no-encryption.zip',
 ]);
 
 it('uses default binary path to import mysql dump', function () {
