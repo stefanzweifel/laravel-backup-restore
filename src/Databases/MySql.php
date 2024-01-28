@@ -7,7 +7,7 @@ namespace Wnx\LaravelBackupRestore\Databases;
 use Illuminate\Support\Facades\File;
 use Spatie\Backup\Exceptions\CannotCreateDbDumper;
 use Spatie\Backup\Tasks\Backup\DbDumperFactory;
-use Wnx\LaravelBackupRestore\Exceptions\DumpDecompressionFailed;
+use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 
 class MySql extends DbImporter
 {
@@ -52,7 +52,7 @@ class MySql extends DbImporter
         $decompressCommand = match (File::extension($storagePathToDatabaseFile)) {
             'gz' => "gunzip < {$storagePathToDatabaseFile}",
             'bz2' => "bunzip2 -c {$storagePathToDatabaseFile}",
-            default => throw DumpDecompressionFailed::create('Unknown compression format', $storagePathToDatabaseFile),
+            default => throw ImportFailed::decompressionFailed('Unknown compression format', $storagePathToDatabaseFile),
         };
 
         return collect([
