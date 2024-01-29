@@ -22,6 +22,7 @@ it('imports sqlite dump', function (string $dumpFile) {
 })->with([
     __DIR__.'/../storage/Laravel/2023-02-28-sqlite-no-compression-no-encryption.sql',
     __DIR__.'/../storage/Laravel/2023-02-28-sqlite-compression-no-encryption.sql.gz',
+    __DIR__.'/../storage/Laravel/2023-02-28-sqlite-compression-no-encryption.sql.bz2',
 ]);
 
 it('throws import failed exception if sqlite dump could not be imported')

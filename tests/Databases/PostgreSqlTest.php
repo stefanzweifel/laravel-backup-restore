@@ -27,6 +27,7 @@ it('imports pgsql dump', function (string $dumpFile) {
 })->with([
     __DIR__.'/../storage/Laravel/2023-03-04-pgsql-no-compression-no-encryption.sql',
     __DIR__.'/../storage/Laravel/2023-03-04-pgsql-compression-no-encryption.sql.gz',
+    __DIR__.'/../storage/Laravel/2023-03-04-pgsql-compression-no-encryption.sql.bz2',
 ])->group('pgsql');
 
 it('uses default binary to import pgsql dump', function () {
