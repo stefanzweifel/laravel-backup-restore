@@ -60,6 +60,7 @@ class PendingRestore
         return storage_path('app'.DIRECTORY_SEPARATOR.'backup-restore-temp'.DIRECTORY_SEPARATOR.$filename);
     }
 
+    /** @deprecated  */
     public function hasNoDbDumpsDirectory(): bool
     {
         return ! Storage::disk($this->restoreDisk)
