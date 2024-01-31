@@ -5,7 +5,17 @@ All notable changes to `laravel-backup-restore` will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.1.5...HEAD)
+## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.2.0...HEAD)
+
+## [v1.2.0](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.1.5...v1.2.0) - 2024-01-31
+
+### Added
+
+- Add Support to import bz2 compressed database dumps ([#61](https://github.com/stefanzweifel/laravel-backup-restore/pull/61))
+
+### Changed
+
+- Better unpacked dump detection ([#62](https://github.com/stefanzweifel/laravel-backup-restore/pull/62))
 
 ## [v1.1.5](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.1.4...v1.1.5) - 2024-01-09
 
