@@ -52,7 +52,7 @@ class MySql extends DbImporter
         $decompressCommand = match (File::extension($storagePathToDatabaseFile)) {
             'gz' => "gunzip < {$storagePathToDatabaseFile}",
             'bz2' => "bunzip2 -c {$storagePathToDatabaseFile}",
-            default => throw ImportFailed::decompressionFailed('Unknown compression format', $storagePathToDatabaseFile),
+            default => throw ImportFailed::decompressionFailed($storagePathToDatabaseFile, 'Unknown compression format'),
         };
 
         return collect([

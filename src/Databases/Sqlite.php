@@ -19,7 +19,7 @@ class Sqlite extends DbImporter
         $decompressCommand = match (File::extension($dumpFile)) {
             'gz' => "gunzip -c {$dumpFile}",
             'bz2' => "bunzip2 -c {$dumpFile}",
-            default => throw ImportFailed::decompressionFailed('Unknown compression format', $dumpFile),
+            default => throw ImportFailed::decompressionFailed($dumpFile, 'Unknown compression format'),
         };
 
         return "$decompressCommand | sqlite3 ".config("database.connections.{$connection}.database");
