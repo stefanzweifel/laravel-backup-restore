@@ -9,6 +9,9 @@ use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 
 class Sqlite extends DbImporter
 {
+    /**
+     * @throws ImportFailed
+     */
     public function getImportCommand(string $dumpFile, string $connection): string
     {
         if (str($dumpFile)->endsWith('sql')) {

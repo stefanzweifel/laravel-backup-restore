@@ -12,7 +12,7 @@ use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 class PostgreSql extends DbImporter
 {
     /**
-     * @throws CannotCreateDbDumper
+     * @throws CannotCreateDbDumper|ImportFailed
      */
     public function getImportCommand(string $dumpFile, string $connection): string
     {

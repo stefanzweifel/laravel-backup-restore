@@ -12,7 +12,7 @@ use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 class MySql extends DbImporter
 {
     /**
-     * @throws CannotCreateDbDumper
+     * @throws CannotCreateDbDumper|ImportFailed
      */
     public function getImportCommand(string $dumpFile, string $connection): string
     {
@@ -44,6 +44,9 @@ class MySql extends DbImporter
         return 'mysql';
     }
 
+    /**
+     * @throws ImportFailed
+     */
     private function getMySqlImportCommandForCompressedDump(string $storagePathToDatabaseFile, string $importToDatabase, array $credentials): string
     {
         $quote = $this->determineQuote();
