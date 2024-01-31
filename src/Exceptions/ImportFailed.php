@@ -16,6 +16,11 @@ class ImportFailed extends Exception
         return new static("The import process failed with a none successful exitcode.{$processOutput}");
     }
 
+    public static function decompressionFailed(string $filename, string $reason): static
+    {
+        return new static("Could not decompress $filename dump file: $reason");
+    }
+
     protected static function formatProcessOutput(ProcessResult $process): string
     {
         $output = $process->output() ?: '<no output>';

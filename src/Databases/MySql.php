@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace Wnx\LaravelBackupRestore\Databases;
 
+use Illuminate\Support\Facades\File;
 use Spatie\Backup\Exceptions\CannotCreateDbDumper;
 use Spatie\Backup\Tasks\Backup\DbDumperFactory;
+use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 
 class MySql extends DbImporter
 {
     /**
-     * @throws CannotCreateDbDumper
+     * @throws CannotCreateDbDumper|ImportFailed
      */
     public function getImportCommand(string $dumpFile, string $connection): string
     {
@@ -28,11 +30,10 @@ class MySql extends DbImporter
             'password' => config("database.connections.{$connection}.password"),
         ];
 
-        // Build Shell Command to import a gzipped SQL file to a MySQL database
-        if (str($dumpFile)->endsWith('gz')) {
-            $command = $this->getMySqlImportCommandForCompressedDump($dumpFile, $importToDatabase, $credentialsArray);
-        } else {
+        if (str($dumpFile)->endsWith('sql')) {
             $command = $this->getMySqlImportCommandForUncompressedDump($importToDatabase, $dumpFile, $credentialsArray);
+        } else {
+            $command = $this->getMySqlImportCommandForCompressedDump($dumpFile, $importToDatabase, $credentialsArray);
         }
 
         return $command;
@@ -43,13 +44,22 @@ class MySql extends DbImporter
         return 'mysql';
     }
 
+    /**
+     * @throws ImportFailed
+     */
     private function getMySqlImportCommandForCompressedDump(string $storagePathToDatabaseFile, string $importToDatabase, array $credentials): string
     {
         $quote = $this->determineQuote();
         $password = $credentials['password'];
 
+        $decompressCommand = match (File::extension($storagePathToDatabaseFile)) {
+            'gz' => "gunzip < {$storagePathToDatabaseFile}",
+            'bz2' => "bunzip2 -c {$storagePathToDatabaseFile}",
+            default => throw ImportFailed::decompressionFailed($storagePathToDatabaseFile, 'Unknown compression format'),
+        };
+
         return collect([
-            "gunzip < {$storagePathToDatabaseFile}",
+            $decompressCommand,
             '|',
             "{$quote}{$this->dumpBinaryPath}mysql{$quote}",
             '-u', $credentials['user'],
