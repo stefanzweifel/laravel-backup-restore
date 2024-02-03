@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace Wnx\LaravelBackupRestore\Databases;
 
+use Illuminate\Support\Facades\File;
 use Spatie\Backup\Exceptions\CannotCreateDbDumper;
 use Spatie\Backup\Tasks\Backup\DbDumperFactory;
+use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 
 class PostgreSql extends DbImporter
 {
     /**
-     * @throws CannotCreateDbDumper
+     * @throws CannotCreateDbDumper|ImportFailed
      */
     public function getImportCommand(string $dumpFile, string $connection): string
     {
@@ -22,24 +24,30 @@ class PostgreSql extends DbImporter
         $dumper = DbDumperFactory::createFromConnection($connection);
         $dumper->getContentsOfCredentialsFile();
 
-        // @todo: Improve detection of compressed files
-        if (str($dumpFile)->endsWith('gz')) {
+        if (str($dumpFile)->endsWith('sql')) {
             return collect([
-                'gunzip -c '.$dumpFile,
-                '|',
                 $this->dumpBinaryPath.'psql',
                 '-h '.config("database.connections.{$connection}.host"),
                 '-U '.config("database.connections.{$connection}.username"),
                 '-d '.config("database.connections.{$connection}.database"),
+                '< '.$dumpFile,
             ])->implode(' ');
         }
 
+        // @todo: Improve detection of compressed files
+        $decompressCommand = match (File::extension($dumpFile)) {
+            'gz' => "gunzip -c {$dumpFile}",
+            'bz2' => "bunzip2 -c {$dumpFile}",
+            default => throw ImportFailed::decompressionFailed($dumpFile, 'Unknown compression format'),
+        };
+
         return collect([
+            $decompressCommand,
+            '|',
             $this->dumpBinaryPath.'psql',
             '-h '.config("database.connections.{$connection}.host"),
             '-U '.config("database.connections.{$connection}.username"),
             '-d '.config("database.connections.{$connection}.database"),
-            '< '.$dumpFile,
         ])->implode(' ');
     }
 

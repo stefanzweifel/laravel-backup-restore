@@ -60,6 +60,7 @@ class PendingRestore
         return storage_path('app'.DIRECTORY_SEPARATOR.'backup-restore-temp'.DIRECTORY_SEPARATOR.$filename);
     }
 
+    /** @deprecated  */
     public function hasNoDbDumpsDirectory(): bool
     {
         return ! Storage::disk($this->restoreDisk)
@@ -72,6 +73,6 @@ class PendingRestore
             ->files($this->getPathToLocalDecompressedBackup().DIRECTORY_SEPARATOR.'db-dumps');
 
         return collect($files)
-            ->filter(fn ($file) => Str::endsWith($file, ['.sql', '.sql.gz']));
+            ->filter(fn ($file) => Str::endsWith($file, ['.sql', '.sql.gz', '.sql.bz2']));
     }
 }
