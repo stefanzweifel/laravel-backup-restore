@@ -189,8 +189,8 @@ class RestoreCommand extends Command
     {
         $connectionConfig = config("database.connections.{$pendingRestore->connection}");
         $connectionInformationForConfirmation = collect([
-            'Host' => Arr::get($connectionConfig, 'host'),
             'Database' => Arr::get($connectionConfig, 'database'),
+            'Host' => Arr::get($connectionConfig, 'host'),
             'username' => Arr::get($connectionConfig, 'username'),
         ])->filter()->map(fn ($value, $key) => "{$key}: {$value}")->implode(', ');
 
