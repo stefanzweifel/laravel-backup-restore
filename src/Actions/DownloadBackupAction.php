@@ -20,7 +20,7 @@ class DownloadBackupAction
                     $pendingRestore->getPathToLocalCompressedBackup(),
                     Storage::disk($pendingRestore->disk)->readStream($pendingRestore->backup)
                 );
-        }, 'Downloading backup …');
+        }, "Downloading {$pendingRestore->backup}");
 
         info("Backup downloaded to {$pendingRestore->getPathToLocalCompressedBackup()}.");
     }
