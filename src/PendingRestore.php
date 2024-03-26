@@ -27,6 +27,7 @@ class PendingRestore
     {
         $restoreName = now()->format('Y-m-d-h-i-s').'-'.Str::uuid();
 
+        /** @phpstan-ignore-next-line */
         return new self(
             ...$attributes,
             restoreName: $restoreName,

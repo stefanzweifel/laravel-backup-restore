@@ -22,6 +22,7 @@ class DatabaseHasTables extends HealthCheck
             $tables = $schemaBuilder->getTables();
         } else {
             // `getAllTables()` has been removed in Laravel 11.
+            /** @phpstan-ignore-next-line  */
             $tables = $schemaBuilder->getAllTables();
         }
 
