@@ -130,9 +130,7 @@ class RestoreCommand extends Command
             ->filter(fn ($file) => Str::endsWith($file, '.zip'));
 
         if ($listOfBackups->count() === 0) {
-            if (isset($disk)) {
-                error("No backups found on {$disk}.");
-            }
+            error("No backups found on {$disk}.");
             throw NoBackupsFound::onDisk($disk);
         }
 
