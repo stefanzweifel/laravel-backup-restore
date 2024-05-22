@@ -185,6 +185,8 @@ class RestoreCommand extends Command
 
     private function confirmRestoreProcess(PendingRestore $pendingRestore): bool
     {
+        if ($this->option('no-interaction')) return true;
+
         $connectionConfig = config("database.connections.{$pendingRestore->connection}");
         $connectionInformationForConfirmation = collect([
             'Database' => Arr::get($connectionConfig, 'database'),
