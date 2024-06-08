@@ -11,6 +11,14 @@ class NoDatabaseDumpsFound extends Exception
 {
     public static function notFoundInBackup(PendingRestore $pendingRestore): self
     {
-        return new static("No database dumps found in backup `{$pendingRestore->backup}`.");
+
+        $files = $pendingRestore->getAvailableFilesInDbDumpsDirectory()->implode("\n");
+
+        return new static(<<<TXT
+            "No database dumps found in backup `{$pendingRestore->backup}`."
+            "Found files in db-dumps directory:"
+            $files
+        TXT
+        );
     }
 }
