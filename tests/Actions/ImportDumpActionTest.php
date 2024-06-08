@@ -41,4 +41,4 @@ it('throws no database dumps found exception if backup does not contain any data
     app(DownloadBackupAction::class)->execute($pendingRestore);
     app(DecompressBackupAction::class)->execute($pendingRestore);
     app(ImportDumpAction::class)->execute($pendingRestore);
-})->throws(NoDatabaseDumpsFound::class);
+})->throws(NoDatabaseDumpsFound::class)->expectExceptionMessage('not-a-sql-file.txt');
