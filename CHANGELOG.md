@@ -5,7 +5,13 @@ All notable changes to `laravel-backup-restore` will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.3.1...HEAD)
+## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.3.2...HEAD)
+
+## [v1.3.2](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.3.1...v1.3.2) - 2024-06-08
+
+### Changed
+
+- Show list of found files in db-dumps directory when NoDatabaseDumpsFound Exception is thrown. ([#74](https://github.com/stefanzweifel/laravel-backup-restore/pull/74))
 
 ## [v1.3.1](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.3.0...v1.3.1) - 2024-03-20
 
