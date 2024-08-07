@@ -5,7 +5,13 @@ All notable changes to `laravel-backup-restore` will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.3.2...HEAD)
+## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.4.0...HEAD)
+
+## [v1.4.0](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.3.2...v1.4.0) - 2024-08-07
+
+### Changed
+
+- Added support for spatie/laravel-backup v9 and drop support for v8 and PHP 8.1 ([#76](https://github.com/stefanzweifel/laravel-backup-restore/pull/76))
 
 ## [v1.3.2](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.3.1...v1.3.2) - 2024-06-08
 
