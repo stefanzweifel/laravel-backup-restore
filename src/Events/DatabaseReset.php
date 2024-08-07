@@ -8,7 +8,5 @@ use Wnx\LaravelBackupRestore\PendingRestore;
 
 class DatabaseReset
 {
-    public function __construct(readonly public PendingRestore $pendingRestore)
-    {
-    }
+    public function __construct(readonly public PendingRestore $pendingRestore) {}
 }

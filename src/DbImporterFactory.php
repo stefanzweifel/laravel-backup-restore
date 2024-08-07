@@ -42,13 +42,13 @@ class DbImporterFactory
         $driver = Str::lower($driver);
 
         if (isset(static::$custom[$driver])) {
-            return new static::$custom[$driver]();
+            return new static::$custom[$driver];
         }
 
         return match ($driver) {
-            'mysql' => new MySql(),
-            'pgsql' => new PostgreSql(),
-            'sqlite' => new Sqlite(),
+            'mysql' => new MySql,
+            'pgsql' => new PostgreSql,
+            'sqlite' => new Sqlite,
             default => throw CannotCreateDbImporter::unsupportedDriver($driver),
         };
     }

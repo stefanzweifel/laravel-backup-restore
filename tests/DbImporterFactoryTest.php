@@ -36,7 +36,7 @@ it('returns db importer instances for given database driver', function ($connect
 ]);
 
 it('returns custom db importer instance for the given database driver', function () {
-    DbImporterFactory::extend('sqlsrv', new class() extends DbImporter
+    DbImporterFactory::extend('sqlsrv', new class extends DbImporter
     {
         public function getImportCommand(string $dumpFile, string $connection): string
         {

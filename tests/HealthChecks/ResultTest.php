@@ -7,7 +7,7 @@ use Wnx\LaravelBackupRestore\HealthChecks\Checks\DatabaseHasTables;
 use Wnx\LaravelBackupRestore\HealthChecks\Result;
 
 it('returns ok result by default', function () {
-    $check = new DatabaseHasTables();
+    $check = new DatabaseHasTables;
     $result = Result::make($check);
 
     expect($result)
@@ -18,7 +18,7 @@ it('returns ok result by default', function () {
 });
 
 it('returns failed result when using failed method', function () {
-    $check = new DatabaseHasTables();
+    $check = new DatabaseHasTables;
     $result = Result::make($check);
 
     $result->failed('::message::');
@@ -31,7 +31,7 @@ it('returns failed result when using failed method', function () {
 });
 
 test('returns ok result when using ok method', function () {
-    $check = new DatabaseHasTables();
+    $check = new DatabaseHasTables;
     $result = Result::make($check);
 
     $result->failed('::message::');
