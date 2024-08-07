@@ -9,3 +9,4 @@ phpstan.neon
 vendor
 node_modules
 database/database.sqlite
+.DS_Store
