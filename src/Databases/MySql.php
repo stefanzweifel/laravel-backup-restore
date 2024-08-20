@@ -63,7 +63,7 @@ class MySql extends DbImporter
             '|',
             "{$quote}{$this->dumpBinaryPath}mysql{$quote}",
             '-u', $credentials['user'],
-            ! empty($password) ? "{$quote}-p'{$password}'{$quote}" : '',
+            ! empty($password) ? "{$quote}-p{$password}{$quote}" : '',
             '-P', $credentials['port'],
             isset($credentials['host']) ? '-h '.$credentials['host'] : '',
             $importToDatabase,
@@ -78,7 +78,7 @@ class MySql extends DbImporter
         return collect([
             "{$quote}{$this->dumpBinaryPath}mysql{$quote}",
             '-u', $credentials['user'],
-            ! empty($password) ? "{$quote}-p'{$password}'{$quote}" : '',
+            ! empty($password) ? "{$quote}-p{$password}{$quote}" : '',
             '-P', $credentials['port'],
             isset($credentials['host']) ? '-h '.$credentials['host'] : '',
             $importToDatabase,
