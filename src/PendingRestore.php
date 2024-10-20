@@ -57,8 +57,9 @@ class PendingRestore
     public function getAbsolutePathToLocalDecompressedBackup(): string
     {
         $filename = $this->restoreId;
+        $root = config('filesystems.disks.local.root');
 
-        return storage_path('app'.DIRECTORY_SEPARATOR.'backup-restore-temp'.DIRECTORY_SEPARATOR.$filename);
+        return $root.DIRECTORY_SEPARATOR.'backup-restore-temp'.DIRECTORY_SEPARATOR.$filename;
     }
 
     /** @deprecated  */
