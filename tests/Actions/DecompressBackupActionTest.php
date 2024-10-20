@@ -41,7 +41,7 @@ it('decompresses zip backup file without password if local root differs from def
 
     Storage::assertMissing($pendingRestore->getPathToLocalDecompressedBackup());
     app(DecompressBackupAction::class)->execute($pendingRestore);
-    Storage::assertExists('private'.DIRECTORY_SEPARATOR. $pendingRestore->getPathToLocalDecompressedBackup());
+    Storage::assertExists('private'.DIRECTORY_SEPARATOR.$pendingRestore->getPathToLocalDecompressedBackup());
 });
 
 it('decompresses zip backup file that needs password do decrypt', function () {
