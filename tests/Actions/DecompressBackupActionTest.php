@@ -26,12 +26,7 @@ it('decompresses zip backup file without password', function () {
 });
 
 it('decompresses zip backup file without password if local root differs from default', function () {
-    config([
-        'filesystems.disks.local' => [
-            'driver' => 'local',
-            'root' => storage_path('app/private'),
-        ],
-    ]);
+    config(['filesystems.disks.local.root' => storage_path('app/private')]);
 
     $pendingRestore = PendingRestore::make(
         disk: 'remote',
@@ -46,7 +41,7 @@ it('decompresses zip backup file without password if local root differs from def
 
     Storage::assertMissing($pendingRestore->getPathToLocalDecompressedBackup());
     app(DecompressBackupAction::class)->execute($pendingRestore);
-    Storage::assertExists($pendingRestore->getPathToLocalDecompressedBackup());
+    Storage::assertExists('private'.DIRECTORY_SEPARATOR. $pendingRestore->getPathToLocalDecompressedBackup());
 });
 
 it('decompresses zip backup file that needs password do decrypt', function () {
