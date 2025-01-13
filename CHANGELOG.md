@@ -5,7 +5,13 @@ All notable changes to `laravel-backup-restore` will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.5.0...HEAD)
+## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.5.1...HEAD)
+
+## [v1.5.1](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.5.0...v1.5.1) - 2025-01-13
+
+### Fixed
+
+- Add Support for laravel/prompts v0.2 and v0.3 ([#87](https://github.com/stefanzweifel/laravel-backup-restore/pull/87))
 
 ## [v1.5.0](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.4.2...v1.5.0) - 2024-11-13
 
