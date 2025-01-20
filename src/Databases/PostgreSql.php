@@ -27,9 +27,12 @@ class PostgreSql extends DbImporter
         if (str($dumpFile)->endsWith('sql')) {
             return collect([
                 $this->dumpBinaryPath.'psql',
-                '-h '.config("database.connections.{$connection}.host"),
-                '-U '.config("database.connections.{$connection}.username"),
-                '-d '.config("database.connections.{$connection}.database"),
+                'postgresql://'.
+                urldecode(config("database.connections.{$connection}.username")).':'.
+                urlencode(config("database.connections.{$connection}.password")).'@'.
+                config("database.connections.{$connection}.host").':'.
+                config("database.connections.{$connection}.port").'/'.
+                config("database.connections.{$connection}.database"),
                 '< '.$dumpFile,
             ])->implode(' ');
         }
@@ -45,9 +48,12 @@ class PostgreSql extends DbImporter
             $decompressCommand,
             '|',
             $this->dumpBinaryPath.'psql',
-            '-h '.config("database.connections.{$connection}.host"),
-            '-U '.config("database.connections.{$connection}.username"),
-            '-d '.config("database.connections.{$connection}.database"),
+            'postgresql://'.
+            urldecode(config("database.connections.{$connection}.username")).':'.
+            urldecode(config("database.connections.{$connection}.password")).'@'.
+            config("database.connections.{$connection}.host").':'.
+            config("database.connections.{$connection}.port").'/'.
+            config("database.connections.{$connection}.database"),
         ])->implode(' ');
     }
 
