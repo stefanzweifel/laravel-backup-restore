@@ -5,7 +5,13 @@ All notable changes to `laravel-backup-restore` will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.5.1...HEAD)
+## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.5.2...HEAD)
+
+## [v1.5.2](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.5.1...v1.5.2) - 2025-01-20
+
+### Changed
+
+- changed postgres restore command to use a connection uri  ([#88](https://github.com/stefanzweifel/laravel-backup-restore/pull/88))
 
 ## [v1.5.1](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.5.0...v1.5.1) - 2025-01-13
 
