@@ -5,7 +5,13 @@ All notable changes to `laravel-backup-restore` will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.5.2...HEAD)
+## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.6.0...HEAD)
+
+## [v1.6.0](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.5.2...v1.6.0) - 2025-02-07
+
+### Added
+
+- Include zipped file size in selection choices ([#92](https://github.com/stefanzweifel/laravel-backup-restore/pull/92))
 
 ## [v1.5.2](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.5.1...v1.5.2) - 2025-01-20
 
