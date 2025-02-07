@@ -9,6 +9,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laravel\Prompts\Prompt;
+use Spatie\Backup\Helpers\Format;
 use Wnx\LaravelBackupRestore\Actions\CheckDependenciesAction;
 use Wnx\LaravelBackupRestore\Actions\CleanupLocalBackupAction;
 use Wnx\LaravelBackupRestore\Actions\DecompressBackupAction;
@@ -144,10 +145,23 @@ class RestoreCommand extends Command
             return $this->option('backup');
         }
 
+        $labelLength = 60;
+
+        foreach($listOfBackups as $key => $path) {
+            $size = Format::humanReadableSize(Storage::disk($disk)->size($path));
+            $labelLength = max($labelLength, strlen($path.$size) + 5);
+            $listOfBackups[$key] = [
+                'path' => $path,
+                'size' => $size
+            ];
+        }
+        
         return select(
             label: 'Which backup should be restored?',
-            options: $listOfBackups->mapWithKeys(fn ($backup) => [$backup => $backup]),
-            default: $listOfBackups->last(),
+            options: $listOfBackups->mapWithKeys(fn ($backup) => [
+                $backup['path'] => str_pad($backup['path'] . ' ', ($labelLength - strlen($backup['size'])), ".", STR_PAD_RIGHT).' '.$backup['size']
+            ]),
+            default: $listOfBackups->last()['path'],
             scroll: 10
         );
     }
