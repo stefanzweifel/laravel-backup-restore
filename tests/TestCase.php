@@ -37,7 +37,7 @@ class TestCase extends Orchestra
             'username' => env('MYSQL_USERNAME', 'root'),
             'password' => env('MYSQL_PASSWORD', ''),
             'dump' => [
-                'skip_ssl' => true,
+                'options' => '--skip-ssl',
             ],
         ]);
 
