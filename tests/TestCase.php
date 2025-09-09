@@ -36,6 +36,9 @@ class TestCase extends Orchestra
             'database' => env('MYSQL_DATABASE', 'laravel_backup_restore'),
             'username' => env('MYSQL_USERNAME', 'root'),
             'password' => env('MYSQL_PASSWORD', ''),
+            'dump' => [
+                'skip_ssl' => true,
+            ],
         ]);
 
         $app['config']->set('database.connections.mysql-restore', [
