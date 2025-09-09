@@ -91,12 +91,6 @@ class MySql extends DbImporter
 
     private function getOptions(string $connection): string
     {
-        $options = config("database.connections.{$connection}.dump.options", null);
-        $skipSSL = config("database.connections.{$connection}.dump.skip_ssl", null);
-
-        return collect([
-            $options,
-            $skipSSL ? '--ssl-mode=DISABLED' : '',
-        ])->filter()->implode(' ');
+        return config("database.connections.{$connection}.dump.options", '');
     }
 }
