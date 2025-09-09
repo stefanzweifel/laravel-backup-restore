@@ -12,13 +12,13 @@ use SensitiveParameter;
 class PendingRestore
 {
     public function __construct(
-        readonly public string $disk,
-        readonly public string $backup,
-        readonly public string $connection,
-        readonly public string $restoreId,
-        readonly public string $restoreName,
-        #[SensitiveParameter] readonly public ?string $backupPassword = null,
-        readonly public string $restoreDisk = 'local',
+        public readonly string $disk,
+        public readonly string $backup,
+        public readonly string $connection,
+        public readonly string $restoreId,
+        public readonly string $restoreName,
+        #[SensitiveParameter] public readonly ?string $backupPassword = null,
+        public readonly string $restoreDisk = 'local',
     ) {
         //
     }

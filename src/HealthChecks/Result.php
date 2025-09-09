@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 class Result
 {
     public function __construct(
-        readonly public HealthCheck $healthCheck,
+        public readonly HealthCheck $healthCheck,
         public int $status,
         public ?string $message,
     ) {
