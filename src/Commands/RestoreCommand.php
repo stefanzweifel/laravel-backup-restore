@@ -40,7 +40,8 @@ class RestoreCommand extends Command
                         {--backup= : The backup to restore. Defaults to the latest backup.}
                         {--connection= : The database connection to restore the backup to. Defaults to the first connection in config/backup.php.}
                         {--password= : The password to decrypt the backup.}
-                        {--reset : Drop all tables in the database before restoring the backup.}';
+                        {--reset : Drop all tables in the database before restoring the backup.}
+                        {--only-db : Only restore the database, not other files in the backup.}';
 
     public $description = 'Restore a database backup dump from a given disk to a database connection.';
 
@@ -76,6 +77,7 @@ class RestoreCommand extends Command
             backup: $this->getBackupToRestore($diskToRestoreFrom),
             connection: $connection,
             backupPassword: $this->getPassword(),
+            onlyDb: $this->option('only-db'),
         );
 
         if (! $this->confirmRestoreProcess($pendingRestore)) {

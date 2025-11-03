@@ -19,6 +19,7 @@ class PendingRestore
         public readonly string $restoreName,
         #[SensitiveParameter] public readonly ?string $backupPassword = null,
         public readonly string $restoreDisk = 'local',
+        public readonly bool $onlyDb = false,
     ) {
         //
     }

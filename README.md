@@ -88,6 +88,9 @@ Password used to decrypt a possible encrypted backup. Defaults to encryption pas
 #### `--reset`
 Reset the database before restoring the backup. Defaults to `false`.
 
+### `only-db`
+Restore only the database from the backup, ignoring other files in the backup. Defaults to `false`.
+
 ---
 
 The command asks for confirmation before starting the restore process. If you run the `backup:restore`-command in an environment where you can't confirm the process (for example through a cronjob), you can use the `--no-interaction`-option to bypass the question.
