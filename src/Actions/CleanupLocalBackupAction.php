@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Wnx\LaravelBackupRestore\Actions;
 
 use Illuminate\Support\Facades\Storage;
+use Wnx\LaravelBackupRestore\Events\LocalBackupRemoved;
 use Wnx\LaravelBackupRestore\PendingRestore;
 
 class CleanupLocalBackupAction
@@ -16,5 +17,7 @@ class CleanupLocalBackupAction
 
         Storage::disk($pendingRestore->restoreDisk)
             ->deleteDirectory($pendingRestore->getPathToLocalDecompressedBackup());
+
+        event(new LocalBackupRemoved($pendingRestore));
     }
 }

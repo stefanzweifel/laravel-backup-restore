@@ -16,7 +16,7 @@ it('imports mysql dump', function () {
     $pendingRestore = PendingRestore::make(
         disk: 'remote',
         backup: 'Laravel/2023-01-28-mysql-no-compression-no-encryption.zip',
-        connection: 'mysql',
+        connection: 'mysql-restore',
         backupPassword: null,
     );
 
@@ -34,7 +34,7 @@ it('throws no database dumps found exception if backup does not contain any data
     $pendingRestore = PendingRestore::make(
         disk: 'remote',
         backup: 'Laravel/2023-03-11-no-dumps.zip',
-        connection: 'mysql',
+        connection: 'mysql-restore',
         backupPassword: null,
     );
 
