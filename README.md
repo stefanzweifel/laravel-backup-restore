@@ -1,3 +1,7 @@
+# ATTENTION
+This fork only adds the possibility to not trash the decrypted folder after the database backup, so you can copy nec. files to the correct place by hand.
+The Original Work and Package is: wnx/laravel-backup-restore
+
 # Restore database backups made with spatie/laravel-backup
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/wnx/laravel-backup-restore.svg?style=flat-square)](https://packagist.org/packages/wnx/laravel-backup-restore)
@@ -14,7 +18,7 @@ The package requires Laravel v10.17 or higher and PHP 8.2 or higher.
 You can install the package via composer:
 
 ```bash
-composer require wnx/laravel-backup-restore
+composer require ojsoft/laravel-backup-restore
 ```
 
 Optionally, you can publish the config file with:
