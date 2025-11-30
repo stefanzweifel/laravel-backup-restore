@@ -95,7 +95,7 @@ class RestoreCommand extends Command
 
         $importDumpAction->execute($pendingRestore);
 
-        if (!$this->option('keep')) {
+        if (! $this->option('keep')) {
             info('Cleaning up …');
             $cleanupLocalBackupAction->execute($pendingRestore);
         }
