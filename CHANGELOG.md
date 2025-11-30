@@ -5,7 +5,18 @@ All notable changes to `laravel-backup-restore` will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.7.0...HEAD)
+## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.8.0...HEAD)
+
+## [v1.8.0](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.7.0...v1.8.0) - 2025-11-30
+
+### Added
+
+- Add Support for PHP 8.5 ([#103](https://github.com/stefanzweifel/laravel-backup-restore/pull/103))
+- Add a keep option to skip the cleanup. ([#105](https://github.com/stefanzweifel/laravel-backup-restore/pull/105))
+
+### Changed
+
+- Drop Support for PHP 8.2 and PHP 8.3 and Laravel 10 and Laravel 11 ([#106](https://github.com/stefanzweifel/laravel-backup-restore/pull/106))
 
 ## [v1.7.0](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.6.2...v1.7.0) - 2025-09-09
 
