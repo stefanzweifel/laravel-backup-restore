@@ -15,7 +15,7 @@ use function PHPUnit\Framework\assertStringContainsString;
 it('imports mysql dump', function (string $dumpFile) {
     Event::fake();
 
-    app(MySql::class)->importToDatabase($dumpFile, 'mysql');
+    app(MySql::class)->importToDatabase($dumpFile, 'mysql-restore');
 
     Event::assertDispatched(function (DatabaseDumpImportWasSuccessful $event) use ($dumpFile) {
         return $event->absolutePathToDump === $dumpFile;
@@ -37,7 +37,7 @@ it('uses default binary path to import mysql dump', function () {
 
     app(MySql::class)->importToDatabase(
         dumpFile: $dumpFile,
-        connection: 'mysql'
+        connection: 'mysql-restore'
     );
 
     Process::assertRan(function (PendingProcess $process) {
