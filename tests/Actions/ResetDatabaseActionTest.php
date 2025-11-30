@@ -40,7 +40,7 @@ it('resets database', function ($connection, $backup, $exceptionMessage) {
     }
 })->with([
     [
-        'connection' => 'mysql',
+        'connection' => 'mysql-restore',
         'backup' => 'Laravel/2023-01-28-mysql-no-compression-no-encryption.zip',
         'exceptionMessage' => 'Base table or view not found',
     ],
