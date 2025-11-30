@@ -40,7 +40,9 @@ class RestoreCommand extends Command
                         {--backup= : The backup to restore. Defaults to the latest backup.}
                         {--connection= : The database connection to restore the backup to. Defaults to the first connection in config/backup.php.}
                         {--password= : The password to decrypt the backup.}
-                        {--reset : Drop all tables in the database before restoring the backup.}';
+                        {--reset : Drop all tables in the database before restoring the backup.}
+                        {--keep : Keeps the downloaded zip and decrypted folder from the backup in existence. Handy for moving files afterwards by hand to the correct location.}
+                        ';
 
     public $description = 'Restore a database backup dump from a given disk to a database connection.';
 
@@ -93,8 +95,10 @@ class RestoreCommand extends Command
 
         $importDumpAction->execute($pendingRestore);
 
-        info('Cleaning up …');
-        $cleanupLocalBackupAction->execute($pendingRestore);
+        if (!$this->option('keep')) {
+            info('Cleaning up …');
+            $cleanupLocalBackupAction->execute($pendingRestore);
+        }
 
         return $this->runHealthChecks($pendingRestore);
     }
