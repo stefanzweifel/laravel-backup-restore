@@ -15,7 +15,10 @@ jobs:
         os: [ubuntu-latest]
         php: [8.4]
         laravel: ['12.*']
-        stability: [prefer-lowest, prefer-stable]
+        stability: [
+          # prefer-lowest,
+          prefer-stable
+        ]
         include:
           - laravel: 12.*
             testbench: ^10.0
