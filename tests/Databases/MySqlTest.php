@@ -15,13 +15,13 @@ use function PHPUnit\Framework\assertStringContainsString;
 it('imports mysql dump', function (string $dumpFile) {
     Event::fake();
 
-    app(MySql::class)->importToDatabase($dumpFile, 'mysql');
+    app(MySql::class)->importToDatabase($dumpFile, 'mysql-restore');
 
     Event::assertDispatched(function (DatabaseDumpImportWasSuccessful $event) use ($dumpFile) {
         return $event->absolutePathToDump === $dumpFile;
     });
 
-    $result = DB::connection('mysql')->table('users')->count();
+    $result = DB::connection('mysql-restore')->table('users')->count();
     expect($result)->toBe(10);
 })->with([
     __DIR__.'/../storage/Laravel/2023-01-28-mysql-no-compression-no-encryption.sql',
@@ -37,7 +37,7 @@ it('uses default binary path to import mysql dump', function () {
 
     app(MySql::class)->importToDatabase(
         dumpFile: $dumpFile,
-        connection: 'mysql'
+        connection: 'mysql-restore'
     );
 
     Process::assertRan(function (PendingProcess $process) {

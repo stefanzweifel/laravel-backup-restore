@@ -22,7 +22,7 @@ it('restores mysql database', function (string $backup, ?string $password = null
         ->expectsOutputToContain('All health checks passed.')
         ->assertSuccessful();
 
-    $result = DB::connection('mysql')->table('users')->count();
+    $result = DB::connection('mysql-restore')->table('users')->count();
 
     expect($result)->toBe(10);
 })->with([
@@ -118,14 +118,14 @@ it('asks for password if password is not passed to command as an option', functi
     $this->artisan(RestoreCommand::class, [
         '--disk' => 'remote',
         '--backup' => 'Laravel/2023-01-28-mysql-no-compression-encrypted.zip',
-        '--connection' => 'mysql',
+        '--connection' => 'mysql-restore',
     ])
         ->expectsConfirmation('Use encryption password from config?', false)
         ->expectsQuestion('What is the password to decrypt the backup? (leave empty if not encrypted)', 'password')
-        ->expectsQuestion('Proceed to restore "Laravel/2023-01-28-mysql-no-compression-encrypted.zip" using the "mysql" database connection. (Database: laravel_backup_restore, Host: 127.0.0.1, username: root)', true)
+        ->expectsQuestion('Proceed to restore "Laravel/2023-01-28-mysql-no-compression-encrypted.zip" using the "mysql-restore" database connection. (Database: laravel_backup_restore, Host: 127.0.0.1, username: root)', true)
         ->assertSuccessful();
 
-    $result = DB::connection('mysql')->table('users')->count();
+    $result = DB::connection('mysql-restore')->table('users')->count();
 
     expect($result)->toBe(10);
 })->group('mysql');
@@ -136,12 +136,12 @@ it('reset database if option is provided', function () {
     $this->artisan(RestoreCommand::class, [
         '--disk' => 'remote',
         '--backup' => 'Laravel/2023-01-28-mysql-no-compression-no-encryption.zip',
-        '--connection' => 'mysql',
+        '--connection' => 'mysql-restore',
         '--password' => null,
         '--no-interaction' => true,
         '--reset' => true,
     ])
-        ->expectsQuestion('Proceed to restore "Laravel/2023-01-28-mysql-no-compression-no-encryption.zip" using the "mysql" database connection. (Database: laravel_backup_restore, Host: 127.0.0.1, username: root)', true)
+        ->expectsQuestion('Proceed to restore "Laravel/2023-01-28-mysql-no-compression-no-encryption.zip" using the "mysql-restore" database connection. (Database: laravel_backup_restore, Host: 127.0.0.1, username: root)', true)
         ->assertSuccessful();
 
     Event::assertDispatched(DatabaseReset::class);
@@ -151,11 +151,11 @@ it('restores database from backup that contains multiple mysql dumps', function 
     $this->artisan(RestoreCommand::class, [
         '--disk' => 'remote',
         '--backup' => 'Laravel/2023-01-28-mysql-no-compression-no-encryption-multiple-dumps.zip',
-        '--connection' => 'mysql',
+        '--connection' => 'mysql-restore',
         '--password' => null,
         '--no-interaction' => true,
     ])
-        ->expectsQuestion('Proceed to restore "Laravel/2023-01-28-mysql-no-compression-no-encryption-multiple-dumps.zip" using the "mysql" database connection. (Database: laravel_backup_restore, Host: 127.0.0.1, username: root)', true)
+        ->expectsQuestion('Proceed to restore "Laravel/2023-01-28-mysql-no-compression-no-encryption-multiple-dumps.zip" using the "mysql-restore" database connection. (Database: laravel_backup_restore, Host: 127.0.0.1, username: root)', true)
         ->assertSuccessful();
 
     $result = DB::connection('mysql')->table('users')->count();
@@ -167,12 +167,12 @@ it('shows error message if health check after import fails', function () {
     $this->artisan(RestoreCommand::class, [
         '--disk' => 'remote',
         '--backup' => 'Laravel/2023-01-28-mysql-no-compression-no-encryption-empty-dump.zip',
-        '--connection' => 'mysql',
+        '--connection' => 'mysql-restore',
         '--password' => null,
         '--no-interaction' => true,
         '--reset' => true,
     ])
-        ->expectsQuestion('Proceed to restore "Laravel/2023-01-28-mysql-no-compression-no-encryption-empty-dump.zip" using the "mysql" database connection. (Database: laravel_backup_restore, Host: 127.0.0.1, username: root)', true)
+        ->expectsQuestion('Proceed to restore "Laravel/2023-01-28-mysql-no-compression-no-encryption-empty-dump.zip" using the "mysql-restore" database connection. (Database: laravel_backup_restore, Host: 127.0.0.1, username: root)', true)
         ->expectsOutputToContain('Database has not tables after restore.')
         ->assertFailed();
 });
