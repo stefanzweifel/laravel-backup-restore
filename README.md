@@ -68,6 +68,7 @@ php artisan backup:restore
     --connection=mysql 
     --password=my-secret-password 
     --reset
+    --keep
 ```
 
 Note that we used `latest` as the value for `--backup`. The command will automatically download the latest available backup and restore its database.
@@ -87,6 +88,9 @@ Password used to decrypt a possible encrypted backup. Defaults to encryption pas
 
 #### `--reset`
 Reset the database before restoring the backup. Defaults to `false`.
+
+#### `--keep`
+Keeps the downloaded backup (and the decrypted backup folder) in existence. You need to delete it by hand. Useful for extracting and restoring backuped files. Defaults to `false`.
 
 ---
 

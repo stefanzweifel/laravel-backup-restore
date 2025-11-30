@@ -21,7 +21,7 @@ it('imports mysql dump', function (string $dumpFile) {
         return $event->absolutePathToDump === $dumpFile;
     });
 
-    $result = DB::connection('mysql')->table('users')->count();
+    $result = DB::connection('mysql-restore')->table('users')->count();
     expect($result)->toBe(10);
 })->with([
     __DIR__.'/../storage/Laravel/2023-01-28-mysql-no-compression-no-encryption.sql',
