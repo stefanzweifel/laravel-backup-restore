@@ -9,6 +9,7 @@ use Wnx\LaravelBackupRestore\Commands\RestoreCommand;
 use Wnx\LaravelBackupRestore\Events\DatabaseReset;
 use Wnx\LaravelBackupRestore\Events\LocalBackupRemoved;
 use Wnx\LaravelBackupRestore\Exceptions\NoBackupsFound;
+use function Pest\Laravel\artisan;
 
 // MySQL
 it('restores mysql database', function (string $backup, ?string $password = null) {
@@ -205,6 +206,10 @@ it('restores pgsql database with binary dump', function (string $backup, ?string
     config([
         'backup.backup.database_dump_file_extension' => 'backup',
     ]);
+    artisan('db:wipe', [
+        '--database' => 'pgsql-restore',
+    ]);
+
     $connection = config('database.connections.pgsql-restore');
 
     $this->artisan(RestoreCommand::class, [
@@ -220,6 +225,10 @@ it('restores pgsql database with binary dump', function (string $backup, ?string
     $result = DB::connection('pgsql-restore')->table('users')->count();
 
     expect($result)->toBe(1);
+
+    artisan('db:wipe', [
+        '--database' => 'pgsql-restore',
+    ]);
 })->with([
     [
         'backup' => 'Laravel/2025-12-26-pgsql-no-compression-custom-extension-binary-dump.zip',
