@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Storage;
 use Wnx\LaravelBackupRestore\Commands\RestoreCommand;
 use Wnx\LaravelBackupRestore\Events\DatabaseReset;
 use Wnx\LaravelBackupRestore\Events\LocalBackupRemoved;
 use Wnx\LaravelBackupRestore\Exceptions\NoBackupsFound;
+
+use function Pest\Laravel\artisan;
 
 // MySQL
 it('restores mysql database', function (string $backup, ?string $password = null) {
@@ -192,13 +195,17 @@ it('does not clear downloaded backup if --keep option is being used', function (
         ->assertSuccessful();
 
     Event::assertNotDispatched(LocalBackupRemoved::class);
-    $files = \Illuminate\Support\Facades\Storage::disk('local')->allFiles('backup-restore-temp');
+    $files = Storage::disk('local')->allFiles('backup-restore-temp');
 
     expect($files)->not->toBeEmpty();
 
 })->group('sqlite');
 
 it('restores pgsql database with binary dump', function (string $backup, ?string $password = null) {
+    artisan('db:wipe', [
+        '--database' => 'pgsql-restore',
+    ]);
+
     config([
         'backup.backup.database_dump_file_extension' => 'backup',
     ]);
@@ -216,6 +223,10 @@ it('restores pgsql database with binary dump', function (string $backup, ?string
     $result = DB::connection('pgsql')->table('users')->count();
 
     expect($result)->toBe(1);
+
+    artisan('db:wipe', [
+        '--database' => 'pgsql-restore',
+    ]);
 })->with([
     [
         'backup' => 'Laravel/2025-12-26-pgsql-no-compression-custom-extension-binary-dump.zip',

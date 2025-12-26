@@ -225,7 +225,7 @@ class RestoreCommand extends Command
     protected function getBackupOptions(Collection $listOfBackups, int $labelLength): Collection
     {
         return $listOfBackups->mapWithKeys(fn ($backup): array => [
-            $backup['path'] => str_pad($backup['path'] . ' ', ($labelLength - strlen($backup['size'])), '.', STR_PAD_RIGHT) . ' ' . $backup['size'],
+            $backup['path'] => str_pad($backup['path'].' ', ($labelLength - strlen($backup['size'])), '.', STR_PAD_RIGHT).' '.$backup['size'],
         ]);
     }
 }

@@ -24,17 +24,33 @@ class PostgreSql extends DbImporter
         $dumper = DbDumperFactory::createFromConnection($connection);
         $dumper->getContentsOfCredentialsFile();
 
+        $username = config("database.connections.{$connection}.username");
+        $password = config("database.connections.{$connection}.password");
+        $host = config("database.connections.{$connection}.host");
+        $port = config("database.connections.{$connection}.port");
+        $database = config("database.connections.{$connection}.database");
         if (str($dumpFile)->endsWith('sql')) {
             return collect([
                 $this->dumpBinaryPath.'psql',
                 'postgresql://'.
-                urldecode(config("database.connections.{$connection}.username")).':'.
-                urlencode(config("database.connections.{$connection}.password")).'@'.
-                config("database.connections.{$connection}.host").':'.
-                config("database.connections.{$connection}.port").'/'.
-                config("database.connections.{$connection}.database"),
+                urldecode($username).':'.
+                urlencode($password).'@'.
+                $host.':'.
+                $port.'/'.
+                $database,
                 '< '.$dumpFile,
             ])->implode(' ');
+        }
+
+        if ($this->isBinaryDump($dumpFile)) {
+            return sprintf(
+                'pg_restore --verbose --no-owner --host=%s --port=%s --username=%s --dbname=%s %s',
+                escapeshellarg($host),
+                escapeshellarg($port),
+                escapeshellarg($username),
+                escapeshellarg($database),
+                escapeshellarg($dumpFile)
+            );
         }
 
         // @todo: Improve detection of compressed files
@@ -49,16 +65,23 @@ class PostgreSql extends DbImporter
             '|',
             $this->dumpBinaryPath.'psql',
             'postgresql://'.
-            urldecode(config("database.connections.{$connection}.username")).':'.
-            urldecode(config("database.connections.{$connection}.password")).'@'.
-            config("database.connections.{$connection}.host").':'.
-            config("database.connections.{$connection}.port").'/'.
-            config("database.connections.{$connection}.database"),
+            urldecode($username).':'.
+            urldecode($password).'@'.
+            $host.':'.
+            $port.'/'.
+            $database,
         ])->implode(' ');
     }
 
     public function getCliName(): string
     {
         return 'psql';
+    }
+
+    public function isBinaryDump(string $dumpFile): bool
+    {
+        return str($dumpFile)->endsWith([
+            '.backup',
+        ]);
     }
 }
