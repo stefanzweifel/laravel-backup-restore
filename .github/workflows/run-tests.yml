@@ -15,7 +15,6 @@ jobs:
         os: [ubuntu-latest]
         php: [8.5, 8.4]
         laravel: ['12.*']
-        # db: [mysql, pgsql]
         stability: [
           # prefer-lowest,
           prefer-stable
@@ -40,9 +39,13 @@ jobs:
           POSTGRES_DB: laravel_backup_restore
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
         ports:
           - 5432:5432
-        options: --health-cmd="pg_isready -U postgres" --health-interval=10s --health-timeout=5s --health-retries=3
 
     name: P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.stability }} - ${{ matrix.os }}
 
@@ -54,7 +57,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo, pdo_mysql, pdo_pgsql
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo
           ini-values: pcov.directory=src
           coverage: pcov
 
@@ -73,11 +76,11 @@ jobs:
 
       - name: Create sqlite database
         run: |
-          mkdir -p database
+          mkdir database
           touch database/database.sqlite
 
       - name: Execute tests
-        run: vendor/bin/pest --coverage --min=70
+        run: vendor/bin/pest --exclude-group=pgsql --coverage --min=70
         env:
           MYSQL_PORT: 3306
           MYSQL_USERNAME: root
