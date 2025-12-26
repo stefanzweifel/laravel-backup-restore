@@ -6,6 +6,7 @@ namespace Wnx\LaravelBackupRestore\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laravel\Prompts\Prompt;
@@ -162,9 +163,7 @@ class RestoreCommand extends Command
 
         return select(
             label: 'Which backup should be restored?',
-            options: $listOfBackups->mapWithKeys(fn ($backup) => [
-                $backup['path'] => str_pad($backup['path'].' ', ($labelLength - strlen($backup['size'])), '.', STR_PAD_RIGHT).' '.$backup['size'],
-            ]),
+            options: $this->getBackupOptions($listOfBackups, $labelLength),
             default: $listOfBackups->last()['path'],
             scroll: 10
         );
@@ -221,5 +220,12 @@ class RestoreCommand extends Command
             ),
             default: true
         );
+    }
+
+    protected function getBackupOptions(Collection $listOfBackups, int $labelLength): Collection
+    {
+        return $listOfBackups->mapWithKeys(fn ($backup): array => [
+            $backup['path'] => str_pad($backup['path'] . ' ', ($labelLength - strlen($backup['size'])), '.', STR_PAD_RIGHT) . ' ' . $backup['size'],
+        ]);
     }
 }
