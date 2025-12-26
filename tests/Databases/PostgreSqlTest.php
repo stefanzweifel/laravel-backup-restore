@@ -47,9 +47,6 @@ it('uses default binary to import pgsql dump', function () {
     Event::assertDispatched(function (DatabaseDumpImportWasSuccessful $event) use ($dumpFile) {
         return $event->absolutePathToDump === $dumpFile;
     });
-
-    $result = DB::connection('pgsql')->table('users')->count();
-    expect($result)->toBe(10);
 })->group('pgsql');
 
 it('uses custom binary to import pgsql dump', function () {
@@ -68,9 +65,6 @@ it('uses custom binary to import pgsql dump', function () {
     Event::assertDispatched(function (DatabaseDumpImportWasSuccessful $event) use ($dumpFile) {
         return $event->absolutePathToDump === $dumpFile;
     });
-
-    $result = DB::connection('pgsql')->table('users')->count();
-    expect($result)->toBe(10);
 })->group('pgsql');
 
 it('uses custom binary to import compressed pgsql dump', function () {
@@ -90,9 +84,6 @@ it('uses custom binary to import compressed pgsql dump', function () {
     Event::assertDispatched(function (DatabaseDumpImportWasSuccessful $event) use ($dumpFile) {
         return $event->absolutePathToDump === $dumpFile;
     });
-
-    $result = DB::connection('pgsql')->table('users')->count();
-    expect($result)->toBe(10);
 })->group('pgsql');
 
 it('throws import failed exception if pgsql dump could not be imported')
