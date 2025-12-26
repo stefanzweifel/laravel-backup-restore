@@ -25,6 +25,7 @@
         "spatie/temporary-directory": "^2.0"
     },
     "require-dev": {
+        "larastan/larastan": "^3.8",
         "laravel/pint": "^1.26",
         "nunomaduro/collision": "^8.0",
         "orchestra/testbench": "^10.8",
