@@ -10,8 +10,6 @@ use Wnx\LaravelBackupRestore\Events\DatabaseReset;
 use Wnx\LaravelBackupRestore\Events\LocalBackupRemoved;
 use Wnx\LaravelBackupRestore\Exceptions\NoBackupsFound;
 
-use function Pest\Laravel\artisan;
-
 // MySQL
 it('restores mysql database', function (string $backup, ?string $password = null) {
     $this->artisan(RestoreCommand::class, [
