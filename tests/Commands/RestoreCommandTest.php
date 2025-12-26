@@ -10,6 +10,8 @@ use Wnx\LaravelBackupRestore\Events\DatabaseReset;
 use Wnx\LaravelBackupRestore\Events\LocalBackupRemoved;
 use Wnx\LaravelBackupRestore\Exceptions\NoBackupsFound;
 
+use function Pest\Laravel\withoutExceptionHandling;
+
 // MySQL
 it('restores mysql database', function (string $backup, ?string $password = null) {
     $this->artisan(RestoreCommand::class, [
@@ -77,6 +79,8 @@ it('restores sqlite database', function (string $backup, ?string $password = nul
 
 // pgsql
 it('restores pgsql database', function (string $backup, ?string $password = null) {
+    withoutExceptionHandling();
+
     $this->artisan(RestoreCommand::class, [
         '--disk' => 'remote',
         '--backup' => $backup,
@@ -214,7 +218,7 @@ it('restores pgsql database with binary dump', function (string $backup, ?string
         ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"pgsql-restore\" database connection. (Database: laravel_backup_restore, Host: 127.0.0.1, username: root)", true)
         ->assertSuccessful();
 
-    $result = DB::connection('pgsql')->table('users')->count();
+    $result = DB::connection('pgsql-restore')->table('users')->count();
 
     expect($result)->toBe(1);
 })->with([
