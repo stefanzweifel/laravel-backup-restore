@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Storage;
 use Wnx\LaravelBackupRestore\Commands\RestoreCommand;
 use Wnx\LaravelBackupRestore\Events\DatabaseReset;
 use Wnx\LaravelBackupRestore\Events\LocalBackupRemoved;
 use Wnx\LaravelBackupRestore\Exceptions\NoBackupsFound;
+
+use function Pest\Laravel\artisan;
 
 // MySQL
 it('restores mysql database', function (string $backup, ?string $password = null) {
@@ -76,6 +79,8 @@ it('restores sqlite database', function (string $backup, ?string $password = nul
 
 // pgsql
 it('restores pgsql database', function (string $backup, ?string $password = null) {
+    $connection = config('database.connections.pgsql-restore');
+
     $this->artisan(RestoreCommand::class, [
         '--disk' => 'remote',
         '--backup' => $backup,
@@ -83,7 +88,7 @@ it('restores pgsql database', function (string $backup, ?string $password = null
         '--password' => $password,
         '--no-interaction' => true,
     ])
-        ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"pgsql-restore\" database connection. (Database: laravel_backup_restore, Host: 127.0.0.1, username: root)", true)
+        ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"pgsql-restore\" database connection. (Database: laravel_backup_restore, Host: {$connection['host']}, username: {$connection['username']})", true)
         ->assertSuccessful();
 
     $result = DB::connection('pgsql')->table('users')->count();
@@ -192,8 +197,41 @@ it('does not clear downloaded backup if --keep option is being used', function (
         ->assertSuccessful();
 
     Event::assertNotDispatched(LocalBackupRemoved::class);
-    $files = \Illuminate\Support\Facades\Storage::disk('local')->allFiles('backup-restore-temp');
+    $files = Storage::disk('local')->allFiles('backup-restore-temp');
 
     expect($files)->not->toBeEmpty();
 
 })->group('sqlite');
+
+it('restores pgsql database with binary dump', function (string $backup, ?string $password = null) {
+    config([
+        'backup.backup.database_dump_file_extension' => 'backup',
+    ]);
+    artisan('db:wipe', [
+        '--database' => 'pgsql-restore',
+    ]);
+
+    $connection = config('database.connections.pgsql-restore');
+
+    $this->artisan(RestoreCommand::class, [
+        '--disk' => 'remote',
+        '--backup' => $backup,
+        '--connection' => 'pgsql-restore',
+        '--password' => $password,
+        '--no-interaction' => true,
+    ])
+        ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"pgsql-restore\" database connection. (Database: laravel_backup_restore, Host: {$connection['host']}, username: {$connection['username']})", true)
+        ->assertSuccessful();
+
+    $result = DB::connection('pgsql-restore')->table('users')->count();
+
+    expect($result)->toBe(1);
+
+    artisan('db:wipe', [
+        '--database' => 'pgsql-restore',
+    ]);
+})->with([
+    [
+        'backup' => 'Laravel/2025-12-26-pgsql-no-compression-custom-extension-binary-dump.zip',
+    ],
+])->group('pgsql');

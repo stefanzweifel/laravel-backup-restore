@@ -4,7 +4,6 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
 
 jobs:
   test:
@@ -33,6 +32,19 @@ jobs:
         ports:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_DB: laravel_backup_restore
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
 
     name: P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.stability }} - ${{ matrix.os }}
 
@@ -67,13 +79,12 @@ jobs:
           touch database/database.sqlite
 
       - name: Execute tests
-        run: vendor/bin/pest --exclude-group=pgsql --coverage --min=70
+        run: vendor/bin/pest --coverage --min=70
         env:
           MYSQL_PORT: 3306
           MYSQL_USERNAME: root
           MYSQL_PASSWORD: 'password'
           MYSQL_DATABASE: laravel_backup_restore
-          PGSQL_HOST: localhost
           PGSQL_PORT: 5432
           PGSQL_USERNAME: postgres
           PGSQL_PASSWORD: postgres
