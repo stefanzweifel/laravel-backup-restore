@@ -5,7 +5,13 @@ All notable changes to `laravel-backup-restore` will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.8.0...HEAD)
+## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.9.0...HEAD)
+
+## [v1.9.0](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.8.0...v1.9.0) - 2025-12-26
+
+### Added
+
+- Add Support for PostgreSQL Binary Dumps ([#107](https://github.com/stefanzweifel/laravel-backup-restore/pull/107))
 
 ## [v1.8.0](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.7.0...v1.8.0) - 2025-11-30
 
