@@ -23,7 +23,7 @@ Optionally, you can publish the config file with:
 php artisan vendor:publish --tag="backup-restore-config"
 ```
 
-This is the contents of the published config file:
+These are the contents of the published config file:
 
 ```php
 return [
@@ -151,6 +151,33 @@ Add your health check to the `health-checks`-array in the `config/laravel-backup
         \App\HealthChecks\MyCustomHealthCheck::class,
     ],
 ```
+
+## Limitations
+
+- The package only supports backups created by the [spatie/laravel-backup](https://github.com/spatie/laravel-backup) package.
+- The package does not support restoring files from backups.
+- The package does not support restoring backups from or in a multi-tenant environment.
+
+## Troubleshooting
+
+### Failed to restore Backup: @@GLOBAL.GTID_PURGED cannot be changed
+
+If your MySQL backup was created on a DigitalOcean managed database, you might encounter the following error when restoring the backup:
+
+> ERROR 3546 (HY000) at line 14: @@GLOBAL.GTID_PURGED cannot be changed: the added gtid set must not overlap with @@GLOBAL.GTID_EXECUTED
+
+This is caused by DigitalOcean's MySQL settings that enable [GTID](https://dev.mysql.com/doc/refman/8.4/en/replication-gtids-concepts.html) on their managed databases.
+
+You can disable GTID when creating the MySQL backup by adding the following option to the `dump`-section of your database connection in `config/backup.php`-file:
+
+```php
+'dump' => [
+    'add_extra_option' => '--set-gtid-purged=OFF --skip-disable-keys',
+],
+```
+
+If your backup was created with GTID enabled, the package currently can't restore it.   
+See [Issue 93](https://github.com/stefanzweifel/laravel-backup-restore/issues/93) for details.
 
 ## Check Backup Integrity automatically with GitHub Actions
 In addition to running the `backup:restore` command manually, you can also use this package to regularly test the integrity of your backups using GitHub Actions.
