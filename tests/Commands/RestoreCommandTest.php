@@ -81,6 +81,10 @@ it('restores sqlite database', function (string $backup, ?string $password = nul
 it('restores pgsql database', function (string $backup, ?string $password = null) {
     withoutExceptionHandling();
 
+    $connection = config('database.connections.pgsql-restore');
+
+    dump($connection);
+
     $this->artisan(RestoreCommand::class, [
         '--disk' => 'remote',
         '--backup' => $backup,
@@ -88,7 +92,7 @@ it('restores pgsql database', function (string $backup, ?string $password = null
         '--password' => $password,
         '--no-interaction' => true,
     ])
-        ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"pgsql-restore\" database connection. (Database: laravel_backup_restore, Host: 127.0.0.1, username: root)", true)
+        ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"pgsql-restore\" database connection. (Database: laravel_backup_restore, Host: {$connection['host']}, username: {$connection['username']})", true)
         ->assertSuccessful();
 
     $result = DB::connection('pgsql')->table('users')->count();
