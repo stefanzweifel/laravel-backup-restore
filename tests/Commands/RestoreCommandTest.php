@@ -79,6 +79,8 @@ it('restores sqlite database', function (string $backup, ?string $password = nul
 
 // pgsql
 it('restores pgsql database', function (string $backup, ?string $password = null) {
+    $connection = config('database.connections.pgsql-restore');
+
     $this->artisan(RestoreCommand::class, [
         '--disk' => 'remote',
         '--backup' => $backup,
@@ -86,7 +88,7 @@ it('restores pgsql database', function (string $backup, ?string $password = null
         '--password' => $password,
         '--no-interaction' => true,
     ])
-        ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"pgsql-restore\" database connection. (Database: laravel_backup_restore, Host: 127.0.0.1, username: root)", true)
+        ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"pgsql-restore\" database connection. (Database: laravel_backup_restore, Host: {$connection['host']}, username: {$connection['username']})", true)
         ->assertSuccessful();
 
     $result = DB::connection('pgsql')->table('users')->count();
@@ -202,13 +204,14 @@ it('does not clear downloaded backup if --keep option is being used', function (
 })->group('sqlite');
 
 it('restores pgsql database with binary dump', function (string $backup, ?string $password = null) {
+    config([
+        'backup.backup.database_dump_file_extension' => 'backup',
+    ]);
     artisan('db:wipe', [
         '--database' => 'pgsql-restore',
     ]);
 
-    config([
-        'backup.backup.database_dump_file_extension' => 'backup',
-    ]);
+    $connection = config('database.connections.pgsql-restore');
 
     $this->artisan(RestoreCommand::class, [
         '--disk' => 'remote',
@@ -217,10 +220,10 @@ it('restores pgsql database with binary dump', function (string $backup, ?string
         '--password' => $password,
         '--no-interaction' => true,
     ])
-        ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"pgsql-restore\" database connection. (Database: laravel_backup_restore, Host: 127.0.0.1, username: root)", true)
+        ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"pgsql-restore\" database connection. (Database: laravel_backup_restore, Host: {$connection['host']}, username: {$connection['username']})", true)
         ->assertSuccessful();
 
-    $result = DB::connection('pgsql')->table('users')->count();
+    $result = DB::connection('pgsql-restore')->table('users')->count();
 
     expect($result)->toBe(1);
 

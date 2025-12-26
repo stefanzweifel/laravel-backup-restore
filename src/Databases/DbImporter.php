@@ -34,7 +34,12 @@ abstract class DbImporter
      */
     public function importToDatabase(string $dumpFile, string $connection): void
     {
-        $process = Process::forever()->run($this->getImportCommand($dumpFile, $connection));
+        $driver = config("database.connections.{$connection}.driver");
+        $password = config("database.connections.{$connection}.password");
+
+        $process = Process::forever()->env([
+            $driver === 'pgsql' ? 'PGPASSWORD' : '' => $password,
+        ])->run($this->getImportCommand($dumpFile, $connection));
 
         $this->checkIfImportWasSuccessful($process, $dumpFile);
     }
