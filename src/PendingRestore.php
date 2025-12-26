@@ -83,7 +83,6 @@ class PendingRestore
         $backupDatabaseDumpFileExtensionWithLeadingDot = ".{$backupDatabaseDumpFileExtension}";
 
         return $this->getAvailableFilesInDbDumpsDirectory()
-            ->filter(fn ($file) => Str::endsWith($file, ['.sql', '.sql.gz', '.sql.bz2', $backupDatabaseDumpFileExtensionWithLeadingDot]))
-            ->dump();
+            ->filter(fn ($file) => Str::endsWith($file, ['.sql', '.sql.gz', '.sql.bz2', $backupDatabaseDumpFileExtensionWithLeadingDot]));
     }
 }

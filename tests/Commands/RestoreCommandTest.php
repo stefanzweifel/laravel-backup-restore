@@ -197,3 +197,27 @@ it('does not clear downloaded backup if --keep option is being used', function (
     expect($files)->not->toBeEmpty();
 
 })->group('sqlite');
+
+it('restores pgsql database with binary dump', function (string $backup, ?string $password = null) {
+    config([
+        'backup.backup.database_dump_file_extension' => 'backup',
+    ]);
+
+    $this->artisan(RestoreCommand::class, [
+        '--disk' => 'remote',
+        '--backup' => $backup,
+        '--connection' => 'pgsql-restore',
+        '--password' => $password,
+        '--no-interaction' => true,
+    ])
+        ->expectsQuestion("Proceed to restore \"{$backup}\" using the \"pgsql-restore\" database connection. (Database: laravel_backup_restore, Host: 127.0.0.1, username: root)", true)
+        ->assertSuccessful();
+
+    $result = DB::connection('pgsql')->table('users')->count();
+
+    expect($result)->toBe(1);
+})->with([
+    [
+        'backup' => 'Laravel/2025-12-26-pgsql-no-compression-custom-extension-binary-dump.zip',
+    ],
+])->group('pgsql');
