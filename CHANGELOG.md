@@ -5,7 +5,13 @@ All notable changes to `laravel-backup-restore` will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.9.0...HEAD)
+## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.9.1...HEAD)
+
+## [v1.9.1](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.9.0...v1.9.1) - 2026-02-25
+
+### Changed
+
+- Add Support for laravel-backup v10 ([#111](https://github.com/stefanzweifel/laravel-backup-restore/pull/111))
 
 ## [v1.9.0](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.8.0...v1.9.0) - 2025-12-26
 
