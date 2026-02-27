@@ -18,7 +18,7 @@
     "require": {
         "php": "^8.4",
         "ext-zip": "*",
-        "illuminate/contracts": "^12.0",
+        "illuminate/contracts": "^12.0 | ^13.0",
         "laravel/prompts": "^0.3.8",
         "spatie/laravel-backup": "^9.0 | ^10.0",
         "spatie/laravel-package-tools": "^1.92",
@@ -28,7 +28,7 @@
         "larastan/larastan": "^3.8",
         "laravel/pint": "^1.26",
         "nunomaduro/collision": "^8.0",
-        "orchestra/testbench": "^10.8",
+        "orchestra/testbench": "^10.8 | ^11.0",
         "pestphp/pest": "^4.1",
         "pestphp/pest-plugin-laravel": "^4.0",
         "phpstan/extension-installer": "^1.4"
