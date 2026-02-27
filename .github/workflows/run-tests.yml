@@ -78,7 +78,6 @@ jobs:
 
       - name: Create sqlite database
         run: |
-          mkdir database
           touch database/database.sqlite
 
       - name: Execute tests
