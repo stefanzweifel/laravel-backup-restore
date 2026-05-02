@@ -13,7 +13,7 @@ class ImportFailed extends Exception
     {
         $processOutput = static::formatProcessOutput($process);
 
-        return new static("The import process failed with a none successful exitcode.{$processOutput}");
+        return new static("The import process failed with a non-successful exit code.{$processOutput}");
     }
 
     public static function decompressionFailed(string $filename, string $reason): static
