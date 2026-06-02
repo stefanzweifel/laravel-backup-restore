@@ -15,17 +15,17 @@ class Sqlite extends DbImporter
     public function getImportCommand(string $dumpFile, string $connection): string
     {
         if (str($dumpFile)->endsWith('sql')) {
-            return 'sqlite3 '.config("database.connections.{$connection}.database").' < '.$dumpFile;
+            return 'sqlite3 '.escapeshellarg(config("database.connections.{$connection}.database")).' < '.escapeshellarg($dumpFile);
         }
 
         // @todo: Improve detection of compressed files
         $decompressCommand = match (File::extension($dumpFile)) {
-            'gz' => "gunzip -c {$dumpFile}",
-            'bz2' => "bunzip2 -c {$dumpFile}",
+            'gz' => 'gunzip -c '.escapeshellarg($dumpFile),
+            'bz2' => 'bunzip2 -c '.escapeshellarg($dumpFile),
             default => throw ImportFailed::decompressionFailed($dumpFile, 'Unknown compression format'),
         };
 
-        return "$decompressCommand | sqlite3 ".config("database.connections.{$connection}.database");
+        return $decompressCommand.' | sqlite3 '.escapeshellarg(config("database.connections.{$connection}.database"));
     }
 
     public function getCliName(): string

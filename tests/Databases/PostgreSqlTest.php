@@ -90,3 +90,27 @@ it('throws import failed exception if pgsql dump could not be imported')
     ->tap(fn () => app(PostgreSql::class)->importToDatabase('file-does-not-exist', 'pgsql'))
     ->throws(ImportFailed::class)
     ->group('pgsql');
+
+it('shell-escapes the dump path in the uncompressed pgsql import command', function () {
+    $maliciousPath = '/tmp/backup.sql;touch /tmp/lbr_security_test;#.sql';
+
+    $command = app(PostgreSql::class)->getImportCommand($maliciousPath, 'pgsql');
+
+    expect($command)->toContain(escapeshellarg($maliciousPath));
+})->group('pgsql');
+
+it('shell-escapes the dump path in the compressed gz pgsql import command', function () {
+    $maliciousPath = '/tmp/backup.sql;touch /tmp/lbr_security_test;#.sql.gz';
+
+    $command = app(PostgreSql::class)->getImportCommand($maliciousPath, 'pgsql');
+
+    expect($command)->toContain(escapeshellarg($maliciousPath));
+})->group('pgsql');
+
+it('shell-escapes the dump path in the compressed bz2 pgsql import command', function () {
+    $maliciousPath = '/tmp/backup.sql;touch /tmp/lbr_security_test;#.sql.bz2';
+
+    $command = app(PostgreSql::class)->getImportCommand($maliciousPath, 'pgsql');
+
+    expect($command)->toContain(escapeshellarg($maliciousPath));
+})->group('pgsql');

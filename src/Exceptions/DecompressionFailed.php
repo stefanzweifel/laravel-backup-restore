@@ -22,6 +22,11 @@ class DecompressionFailed extends Exception
         ZipArchive::ER_SEEK => 'The file %filename% can\'t be sought. (ZipArchive::ER_SEEK)',
     ];
 
+    public static function pathTraversalDetected(string $entryName, string $archive): static
+    {
+        return new static("ZIP entry \"{$entryName}\" in \"{$archive}\" was rejected due to a path traversal attempt.");
+    }
+
     public static function create($errorCode, $filename): static
     {
         return new static(str_replace(

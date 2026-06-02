@@ -53,8 +53,8 @@ class MySql extends DbImporter
         $password = $credentials['password'];
 
         $decompressCommand = match (File::extension($storagePathToDatabaseFile)) {
-            'gz' => "gunzip < {$storagePathToDatabaseFile}",
-            'bz2' => "bunzip2 -c {$storagePathToDatabaseFile}",
+            'gz' => 'gunzip < '.escapeshellarg($storagePathToDatabaseFile),
+            'bz2' => 'bunzip2 -c '.escapeshellarg($storagePathToDatabaseFile),
             default => throw ImportFailed::decompressionFailed($storagePathToDatabaseFile, 'Unknown compression format'),
         };
 
@@ -85,7 +85,7 @@ class MySql extends DbImporter
             $importToDatabase,
             $this->getOptions($connection),
             '<',
-            $storagePathToDatabaseFile,
+            escapeshellarg($storagePathToDatabaseFile),
         ])->filter()->implode(' ');
     }
 
