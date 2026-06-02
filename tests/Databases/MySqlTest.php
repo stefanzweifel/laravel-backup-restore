@@ -99,3 +99,27 @@ it('uses custom binary path to import compressed mysql dump', function () {
 it('throws import failed exception if mysql dump could not be imported')
     ->tap(fn () => app(MySql::class)->importToDatabase('file-does-not-exist', 'mysql'))
     ->throws(ImportFailed::class);
+
+it('shell-escapes the dump path in the uncompressed mysql import command', function () {
+    $maliciousPath = '/tmp/backup.sql;touch /tmp/lbr_security_test;#.sql';
+
+    $command = app(MySql::class)->getImportCommand($maliciousPath, 'mysql-restore');
+
+    expect($command)->toContain(escapeshellarg($maliciousPath));
+});
+
+it('shell-escapes the dump path in the compressed gz mysql import command', function () {
+    $maliciousPath = '/tmp/backup.sql;touch /tmp/lbr_security_test;#.sql.gz';
+
+    $command = app(MySql::class)->getImportCommand($maliciousPath, 'mysql-restore');
+
+    expect($command)->toContain(escapeshellarg($maliciousPath));
+});
+
+it('shell-escapes the dump path in the compressed bz2 mysql import command', function () {
+    $maliciousPath = '/tmp/backup.sql;touch /tmp/lbr_security_test;#.sql.bz2';
+
+    $command = app(MySql::class)->getImportCommand($maliciousPath, 'mysql-restore');
+
+    expect($command)->toContain(escapeshellarg($maliciousPath));
+});
