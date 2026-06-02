@@ -56,6 +56,55 @@ it('throws DecompressionFailed exception', function () {
     ->throws(DecompressionFailed::class)
     ->expectExceptionMessage('Not a zip archive. (ZipArchive::ER_NOZIP)');
 
+it('throws DecompressionFailed when zip contains a path traversal entry using dot-dot segments', function () {
+    $pendingRestore = PendingRestore::make(
+        disk: 'remote',
+        backup: 'Laravel/crafted-traversal.zip',
+        connection: 'mysql',
+    );
+
+    $tmpPath = tempnam(sys_get_temp_dir(), 'lbr-test-').'.zip';
+    $zip = new ZipArchive;
+    $zip->open($tmpPath, ZipArchive::CREATE);
+    $zip->addFromString('db-dumps/legitimate.sql', '-- harmless SQL');
+    $zip->addFromString('../../../crafted-outside.sql', '-- evil');
+    $zip->close();
+
+    Storage::disk('local')->put(
+        $pendingRestore->getPathToLocalCompressedBackup(),
+        file_get_contents($tmpPath)
+    );
+    unlink($tmpPath);
+
+    app(DecompressBackupAction::class)->execute($pendingRestore);
+})
+    ->throws(DecompressionFailed::class)
+    ->expectExceptionMessage('path traversal');
+
+it('throws DecompressionFailed when zip contains an entry with dot-dot that escapes after a real directory', function () {
+    $pendingRestore = PendingRestore::make(
+        disk: 'remote',
+        backup: 'Laravel/crafted-traversal.zip',
+        connection: 'mysql',
+    );
+
+    $tmpPath = tempnam(sys_get_temp_dir(), 'lbr-test-').'.zip';
+    $zip = new ZipArchive;
+    $zip->open($tmpPath, ZipArchive::CREATE);
+    $zip->addFromString('db-dumps/../../outside.sql', '-- evil');
+    $zip->close();
+
+    Storage::disk('local')->put(
+        $pendingRestore->getPathToLocalCompressedBackup(),
+        file_get_contents($tmpPath)
+    );
+    unlink($tmpPath);
+
+    app(DecompressBackupAction::class)->execute($pendingRestore);
+})
+    ->throws(DecompressionFailed::class)
+    ->expectExceptionMessage('path traversal');
+
 it('throws exception if backup password is wrong', function () {
     $pendingRestore = PendingRestore::make(
         disk: 'remote',
