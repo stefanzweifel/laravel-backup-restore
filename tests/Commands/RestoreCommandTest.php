@@ -182,6 +182,26 @@ it('shows error message if health check after import fails', function () {
         ->assertFailed();
 });
 
+it('restores backup when --backup path is in a different directory than config backup name', function () {
+    // Simulate a multi-tenant scenario where the backup lives under a different name
+    // than config('backup.backup.name'). Without the fix this throws NoBackupsFound
+    // because the code would list files under the config name directory first.
+    config(['backup.backup.name' => 'NonExistentApp']);
+
+    $this->artisan(RestoreCommand::class, [
+        '--disk' => 'remote',
+        '--backup' => 'Laravel/2023-02-28-sqlite-no-compression-no-encryption.zip',
+        '--connection' => 'sqlite-restore',
+        '--no-interaction' => true,
+    ])
+        ->expectsQuestion('Proceed to restore "Laravel/2023-02-28-sqlite-no-compression-no-encryption.zip" using the "sqlite-restore" database connection. (Database: database/database.sqlite)', true)
+        ->assertSuccessful();
+
+    $result = DB::connection('sqlite')->table('users')->count();
+
+    expect($result)->toBe(10);
+})->group('sqlite');
+
 it('does not clear downloaded backup if --keep option is being used', function () {
     Event::fake([LocalBackupRemoved::class]);
 
