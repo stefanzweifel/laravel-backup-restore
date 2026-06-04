@@ -131,6 +131,10 @@ class RestoreCommand extends Command
      */
     private function getBackupToRestore(string $disk): string
     {
+        if ($this->option('backup') && $this->option('backup') !== 'latest') {
+            return $this->option('backup');
+        }
+
         $name = config('backup.backup.name');
 
         info("Fetch list of backups from $disk …");
@@ -144,10 +148,6 @@ class RestoreCommand extends Command
 
         if ($this->option('backup') === 'latest') {
             return $listOfBackups->last();
-        }
-
-        if ($this->option('backup')) {
-            return $this->option('backup');
         }
 
         $labelLength = 60;
