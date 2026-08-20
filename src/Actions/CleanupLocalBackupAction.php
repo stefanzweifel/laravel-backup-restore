@@ -13,9 +13,6 @@ class CleanupLocalBackupAction
     public function execute(PendingRestore $pendingRestore): void
     {
         Storage::disk($pendingRestore->restoreDisk)
-            ->delete($pendingRestore->getPathToLocalCompressedBackup());
-
-        Storage::disk($pendingRestore->restoreDisk)
             ->deleteDirectory($pendingRestore->getPathToLocalDecompressedBackup());
 
         event(new LocalBackupRemoved($pendingRestore));
