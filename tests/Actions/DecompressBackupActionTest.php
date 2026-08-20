@@ -22,6 +22,7 @@ it('decompresses zip backup file without password', function () {
 
     Storage::assertMissing($pendingRestore->getPathToLocalDecompressedBackup());
     app(DecompressBackupAction::class)->execute($pendingRestore);
+    Storage::assertMissing($pendingRestore->getPathToLocalCompressedBackup());
     Storage::assertExists($pendingRestore->getPathToLocalDecompressedBackup());
 });
 
@@ -39,6 +40,7 @@ it('decompresses zip backup file that needs password do decrypt', function () {
 
     Storage::assertMissing($pendingRestore->getPathToLocalDecompressedBackup());
     app(DecompressBackupAction::class)->execute($pendingRestore);
+    Storage::assertMissing($pendingRestore->getPathToLocalCompressedBackup());
     Storage::assertExists($pendingRestore->getPathToLocalDecompressedBackup());
 });
 

@@ -49,6 +49,9 @@ class DecompressBackupAction
             }, 'Extracting database dump from backup …');
 
             info('Extracted database dump from backup.');
+
+            Storage::disk($pendingRestore->restoreDisk)
+                ->delete($pendingRestore->getPathToLocalCompressedBackup());
         } else {
             throw DecompressionFailed::create($result, $pathToFileToDecompress);
         }
