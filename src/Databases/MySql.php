@@ -49,9 +49,6 @@ class MySql extends DbImporter
      */
     private function getMySqlImportCommandForCompressedDump(string $storagePathToDatabaseFile, string $importToDatabase, array $credentials, string $connection): string
     {
-        $quote = $this->determineQuote();
-        $password = $credentials['password'];
-
         $decompressCommand = match (File::extension($storagePathToDatabaseFile)) {
             'gz' => 'gunzip < '.escapeshellarg($storagePathToDatabaseFile),
             'bz2' => 'bunzip2 -c '.escapeshellarg($storagePathToDatabaseFile),
@@ -61,36 +58,57 @@ class MySql extends DbImporter
         return collect([
             $decompressCommand,
             '|',
-            "{$quote}{$this->dumpBinaryPath}mysql{$quote}",
-            '-u', $credentials['user'],
-            ! empty($password) ? "{$quote}-p{$password}{$quote}" : '',
-            '-P', $credentials['port'],
-            isset($credentials['host']) ? '-h '.$credentials['host'] : '',
-            $importToDatabase,
-            $this->getOptions($connection),
+            ...$this->getMySqlArguments($importToDatabase, $credentials, $connection),
         ])->filter()->implode(' ');
     }
 
     private function getMySqlImportCommandForUncompressedDump(string $importToDatabase, string $storagePathToDatabaseFile, array $credentials, string $connection): string
     {
-        $quote = $this->determineQuote();
-        $password = $credentials['password'];
-
         return collect([
-            "{$quote}{$this->dumpBinaryPath}mysql{$quote}",
-            '-u', $credentials['user'],
-            ! empty($password) ? "{$quote}-p{$password}{$quote}" : '',
-            '-P', $credentials['port'],
-            isset($credentials['host']) ? '-h '.$credentials['host'] : '',
-            $importToDatabase,
-            $this->getOptions($connection),
+            ...$this->getMySqlArguments($importToDatabase, $credentials, $connection),
             '<',
             escapeshellarg($storagePathToDatabaseFile),
         ])->filter()->implode(' ');
     }
 
+    /**
+     * Every value here ends up in a string that is handed to the shell, so each one
+     * is escaped individually.
+     *
+     * @return array<int, string>
+     */
+    private function getMySqlArguments(string $importToDatabase, array $credentials, string $connection): array
+    {
+        return [
+            escapeshellarg($this->dumpBinaryPath.'mysql'),
+            filled($credentials['user'] ?? null) ? '-u '.escapeshellarg((string) $credentials['user']) : '',
+            filled($credentials['password'] ?? null) ? '-p'.escapeshellarg((string) $credentials['password']) : '',
+            filled($credentials['port'] ?? null) ? '-P '.escapeshellarg((string) $credentials['port']) : '',
+            filled($credentials['host'] ?? null) ? '-h '.escapeshellarg((string) $credentials['host']) : '',
+            escapeshellarg($importToDatabase),
+            $this->getOptions($connection),
+        ];
+    }
+
+    /**
+     * The configured options are a single string holding one or more CLI flags. Split
+     * it into arguments — honouring quoted values that contain spaces — and escape
+     * each argument, so no option value can break out into the shell.
+     */
     private function getOptions(string $connection): string
     {
-        return config("database.connections.{$connection}.dump.options", '');
+        $options = (string) config("database.connections.{$connection}.dump.options", '');
+
+        preg_match_all('/(?:[^\s"\']+|"[^"]*"|\'[^\']*\')+/', $options, $matches);
+
+        return collect($matches[0])
+            ->map(fn (string $option): string => escapeshellarg(
+                preg_replace_callback(
+                    '/"([^"]*)"|\'([^\']*)\'/',
+                    fn (array $match): string => $match[2] ?? $match[1],
+                    $option
+                ) ?? $option
+            ))
+            ->implode(' ');
     }
 }

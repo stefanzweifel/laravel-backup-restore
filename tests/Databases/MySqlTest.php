@@ -123,3 +123,63 @@ it('shell-escapes the dump path in the compressed bz2 mysql import command', fun
 
     expect($command)->toContain(escapeshellarg($maliciousPath));
 });
+
+it('shell-escapes connection credentials in the uncompressed mysql import command', function () {
+    config()->set('database.connections.mysql-restore.host', '127.0.0.1 $(touch /tmp/lbr_security_test)');
+    config()->set('database.connections.mysql-restore.port', '3306;touch /tmp/lbr_security_test');
+    config()->set('database.connections.mysql-restore.username', 'root;touch /tmp/lbr_security_test');
+    config()->set('database.connections.mysql-restore.password', "secret';touch /tmp/lbr_security_test;'");
+    config()->set('database.connections.mysql-restore.database', 'database`touch /tmp/lbr_security_test`');
+
+    $command = app(MySql::class)->getImportCommand('/tmp/backup.sql', 'mysql-restore');
+
+    expect($command)
+        ->toContain('-u '.escapeshellarg('root;touch /tmp/lbr_security_test'))
+        ->toContain('-p'.escapeshellarg("secret';touch /tmp/lbr_security_test;'"))
+        ->toContain('-P '.escapeshellarg('3306;touch /tmp/lbr_security_test'))
+        ->toContain('-h '.escapeshellarg('127.0.0.1 $(touch /tmp/lbr_security_test)'))
+        ->toContain(escapeshellarg('database`touch /tmp/lbr_security_test`'));
+});
+
+it('shell-escapes connection credentials in the compressed mysql import command', function () {
+    config()->set('database.connections.mysql-restore.host', '127.0.0.1 $(touch /tmp/lbr_security_test)');
+    config()->set('database.connections.mysql-restore.port', '3306;touch /tmp/lbr_security_test');
+    config()->set('database.connections.mysql-restore.username', 'root;touch /tmp/lbr_security_test');
+    config()->set('database.connections.mysql-restore.password', "secret';touch /tmp/lbr_security_test;'");
+    config()->set('database.connections.mysql-restore.database', 'database`touch /tmp/lbr_security_test`');
+
+    $command = app(MySql::class)->getImportCommand('/tmp/backup.sql.gz', 'mysql-restore');
+
+    expect($command)
+        ->toContain('-u '.escapeshellarg('root;touch /tmp/lbr_security_test'))
+        ->toContain('-p'.escapeshellarg("secret';touch /tmp/lbr_security_test;'"))
+        ->toContain('-P '.escapeshellarg('3306;touch /tmp/lbr_security_test'))
+        ->toContain('-h '.escapeshellarg('127.0.0.1 $(touch /tmp/lbr_security_test)'))
+        ->toContain(escapeshellarg('database`touch /tmp/lbr_security_test`'));
+});
+
+it('shell-escapes the configured dump options in the mysql import command', function () {
+    config()->set('database.connections.mysql-restore.dump.options', '--skip-ssl; touch /tmp/lbr_security_test');
+
+    $command = app(MySql::class)->getImportCommand('/tmp/backup.sql', 'mysql-restore');
+
+    expect($command)
+        ->toContain(escapeshellarg('--skip-ssl;').' '.escapeshellarg('touch').' '.escapeshellarg('/tmp/lbr_security_test'));
+});
+
+it('keeps quoted dump options with spaces as a single argument', function () {
+    config()->set('database.connections.mysql-restore.dump.options', '--skip-ssl --ssl-ca="/path with space/ca.pem"');
+
+    $command = app(MySql::class)->getImportCommand('/tmp/backup.sql', 'mysql-restore');
+
+    expect($command)
+        ->toContain(escapeshellarg('--skip-ssl').' '.escapeshellarg('--ssl-ca=/path with space/ca.pem'));
+});
+
+it('shell-escapes the configured binary path in the mysql import command', function () {
+    config()->set('database.connections.mysql-restore.dump.dump_binary_path', '/usr/bin/;touch /tmp/lbr_security_test');
+
+    $command = app(MySql::class)->getImportCommand('/tmp/backup.sql', 'mysql-restore');
+
+    expect($command)->toContain(escapeshellarg('/usr/bin/;touch /tmp/lbr_security_test/mysql'));
+});
