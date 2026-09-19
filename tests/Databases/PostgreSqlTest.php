@@ -114,3 +114,53 @@ it('shell-escapes the dump path in the compressed bz2 pgsql import command', fun
 
     expect($command)->toContain(escapeshellarg($maliciousPath));
 })->group('pgsql');
+
+// A connection whose every parameter carries a shell payload. It is not one of the
+// connections the test suite wipes, so it never has to be reachable.
+$injectionConnection = function (): string {
+    config()->set('database.connections.pgsql-injection', [
+        'driver' => 'pgsql',
+        'host' => '127.0.0.1 $(touch /tmp/lbr_security_test)',
+        'port' => '5432;touch /tmp/lbr_security_test',
+        'database' => 'database`touch /tmp/lbr_security_test`',
+        'username' => 'root;touch /tmp/lbr_security_test',
+        'password' => "secret';touch /tmp/lbr_security_test;'",
+        'search_path' => 'public',
+    ]);
+
+    return 'pgsql-injection';
+};
+
+$expectedInjectionDsn = 'postgresql://root%3Btouch%20%2Ftmp%2Flbr_security_test'.
+    ':secret%27%3Btouch%20%2Ftmp%2Flbr_security_test%3B%27'.
+    '@127.0.0.1 $(touch /tmp/lbr_security_test)'.
+    ':5432;touch /tmp/lbr_security_test'.
+    '/database%60touch%20%2Ftmp%2Flbr_security_test%60';
+
+it('shell-escapes connection credentials in the uncompressed pgsql import command', function () use ($injectionConnection, $expectedInjectionDsn) {
+    $command = app(PostgreSql::class)->getImportCommand('/tmp/backup.sql', $injectionConnection());
+
+    expect($command)->toContain(escapeshellarg($expectedInjectionDsn));
+})->group('pgsql');
+
+it('shell-escapes connection credentials in the compressed pgsql import command', function () use ($injectionConnection, $expectedInjectionDsn) {
+    $command = app(PostgreSql::class)->getImportCommand('/tmp/backup.sql.gz', $injectionConnection());
+
+    expect($command)->toContain(escapeshellarg($expectedInjectionDsn));
+})->group('pgsql');
+
+it('shell-escapes connection credentials in the binary pgsql import command', function () use ($injectionConnection) {
+    $command = app(PostgreSql::class)->getImportCommand('/tmp/backup.backup', $injectionConnection());
+
+    expect($command)
+        ->toContain('--host='.escapeshellarg('127.0.0.1 $(touch /tmp/lbr_security_test)'))
+        ->toContain('--dbname='.escapeshellarg('database`touch /tmp/lbr_security_test`'));
+})->group('pgsql');
+
+it('shell-escapes the configured binary path in the pgsql import command', function () {
+    config()->set('database.connections.pgsql-restore.dump.dump_binary_path', '/usr/bin/;touch /tmp/lbr_security_test');
+
+    $command = app(PostgreSql::class)->getImportCommand('/tmp/backup.sql', 'pgsql-restore');
+
+    expect($command)->toContain(escapeshellarg('/usr/bin/;touch /tmp/lbr_security_test/psql'));
+})->group('pgsql');
