@@ -9,6 +9,11 @@ A package to restore a database backup created by the [spatie/laravel-backup](ht
 
 The package requires Laravel v12 or higher and PHP 8.4 or higher.
 
+MySQL and MariaDB restores need the `mysql` or `mariadb` client on the machine running the command,
+PostgreSQL restores need `psql` and `pg_restore`. SQLite restores need neither: they go through
+PDO. Compressed dumps are decompressed in PHP, so `gunzip` and `bunzip2` are not needed
+(`ext-zlib` is required, `ext-bz2` for bzip2 dumps).
+
 ## Installation
 
 You can install the package via composer:
@@ -39,8 +44,36 @@ return [
     'health-checks' => [
         \Wnx\LaravelBackupRestore\HealthChecks\Checks\DatabaseHasTables::class,
     ],
+
+    /**
+     * psql executes backslash meta-commands it reads from a dump, and `\!` runs
+     * a shell command. Dumps are therefore scanned and refused if they contain
+     * a meta-command that pg_dump does not itself emit.
+     *
+     * Set this to true to hand meta-commands to psql anyway. Only do that for
+     * dumps you trust.
+     */
+    'allow_psql_meta_commands' => false,
 ];
 ```
+
+## Security
+
+Restoring a backup from a disk you do not fully control is close to running a shell script from
+that disk. A database dump is a script the database client executes, and the clients do more than
+run SQL:
+
+- `psql` runs a line starting with `\!` as a shell command, whether or not stdin is a terminal.
+  There is no flag that turns that off. This package scans a plain-SQL PostgreSQL dump before
+  handing it to `psql` and refuses any meta-command that `pg_dump` does not itself emit. The
+  `allow_psql_meta_commands` config option turns the scan off for a dump you trust.
+- `sqlite3` does the same for `.shell` and `.system`. This package imports SQLite dumps through
+  PDO, which has no such commands.
+- The `mysql` client rejects `system` and `\!` from redirected stdin, so MySQL and MariaDB need
+  nothing extra.
+
+Dumps also contain ordinary SQL, which can drop tables, create users and read files the database
+server can read. Restore only from a disk you trust.
 
 ## Usage
 
