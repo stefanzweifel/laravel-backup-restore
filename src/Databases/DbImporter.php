@@ -6,13 +6,31 @@ namespace Wnx\LaravelBackupRestore\Databases;
 
 use Illuminate\Contracts\Process\ProcessResult;
 use Illuminate\Support\Facades\Process;
+use Wnx\LaravelBackupRestore\DbImporter\Exceptions\CannotStartImport;
+use Wnx\LaravelBackupRestore\DbImporter\Exceptions\DumpContainsMetaCommand;
+use Wnx\LaravelBackupRestore\DbImporter\Exceptions\ImportFailed as ImporterFailed;
+use Wnx\LaravelBackupRestore\DbImporterFactory;
 use Wnx\LaravelBackupRestore\Events\DatabaseDumpImportWasSuccessful;
 use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 
+/**
+ * @deprecated Use Wnx\LaravelBackupRestore\DbImporter\DbImporter. This class is
+ *             kept because the README documents extending it. The importers
+ *             this package ships forward to the new implementation; a class of
+ *             your own that builds a command string still runs through a shell
+ *             the way it always did.
+ */
 abstract class DbImporter
 {
     protected string $dumpBinaryPath = '';
 
+    /**
+     * @deprecated Commands are no longer built as shell strings. The importers
+     *             this package ships return the argument vector joined with
+     *             escapeshellarg() for display; that string is not what runs,
+     *             and it does not include the dump file, which is streamed in
+     *             on stdin.
+     */
     abstract public function getImportCommand(string $dumpFile, string $connection): string;
 
     abstract public function getCliName(): string;
@@ -20,20 +38,20 @@ abstract class DbImporter
     /**
      * @throws ImportFailed
      */
-    protected function checkIfImportWasSuccessful(ProcessResult $process, string $dumpFile): void
-    {
-        if (! $process->successful()) {
-            throw ImportFailed::processDidNotEndSuccessfully($process, $dumpFile);
-        }
-
-        event(new DatabaseDumpImportWasSuccessful($dumpFile));
-    }
-
-    /**
-     * @throws ImportFailed
-     */
     public function importToDatabase(string $dumpFile, string $connection): void
     {
+        if ($this->forwardsToDbImporter()) {
+            try {
+                DbImporterFactory::importerForConnection($connection)->importFromFile($dumpFile);
+            } catch (ImporterFailed|CannotStartImport|DumpContainsMetaCommand $exception) {
+                throw ImportFailed::fromImporter($exception);
+            }
+
+            event(new DatabaseDumpImportWasSuccessful($dumpFile));
+
+            return;
+        }
+
         $driver = config("database.connections.{$connection}.driver");
         $password = config("database.connections.{$connection}.password");
 
@@ -56,6 +74,36 @@ abstract class DbImporter
         $this->dumpBinaryPath = $dumpBinaryPath;
 
         return $this;
+    }
+
+    /**
+     * True for the importers this package ships, which hand the import to
+     * Wnx\LaravelBackupRestore\DbImporter. False for anything else, which
+     * keeps the behaviour it had before that abstraction existed.
+     */
+    protected function forwardsToDbImporter(): bool
+    {
+        return false;
+    }
+
+    /**
+     * @param  array<int, string>  $command
+     */
+    protected static function commandForDisplay(array $command): string
+    {
+        return implode(' ', array_map(escapeshellarg(...), $command));
+    }
+
+    /**
+     * @throws ImportFailed
+     */
+    protected function checkIfImportWasSuccessful(ProcessResult $process, string $dumpFile): void
+    {
+        if (! $process->successful()) {
+            throw ImportFailed::processDidNotEndSuccessfully($process, $dumpFile);
+        }
+
+        event(new DatabaseDumpImportWasSuccessful($dumpFile));
     }
 
     protected function determineQuote(): string

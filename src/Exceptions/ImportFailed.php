@@ -6,6 +6,7 @@ namespace Wnx\LaravelBackupRestore\Exceptions;
 
 use Exception;
 use Illuminate\Contracts\Process\ProcessResult;
+use Throwable;
 
 class ImportFailed extends Exception implements BackupRestoreException
 {
@@ -44,6 +45,16 @@ class ImportFailed extends Exception implements BackupRestoreException
             dumpFile: $dumpFile,
             message: "{$subject} failed with exit code ".($exitCode ?? 'unknown').'.',
         );
+    }
+
+    /**
+     * Wraps a failure from Wnx\LaravelBackupRestore\DbImporter so callers that
+     * catch this exception keep working. The original is the previous
+     * exception.
+     */
+    public static function fromImporter(Throwable $exception): static
+    {
+        return new static($exception->getMessage(), previous: $exception);
     }
 
     public static function decompressionFailed(string $filename, string $reason): static

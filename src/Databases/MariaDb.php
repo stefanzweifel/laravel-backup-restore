@@ -7,13 +7,13 @@ namespace Wnx\LaravelBackupRestore\Databases;
 use Wnx\LaravelBackupRestore\DbImporterFactory;
 
 /**
- * @deprecated Use Wnx\LaravelBackupRestore\DbImporter\Databases\MySql.
+ * @deprecated Use Wnx\LaravelBackupRestore\DbImporter\Databases\MariaDb.
  */
-class MySql extends DbImporter
+class MariaDb extends DbImporter
 {
     public function getCliName(): string
     {
-        return 'mysql';
+        return 'mariadb';
     }
 
     /**
