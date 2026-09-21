@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Illuminate\Process\PendingProcess;
+use Illuminate\Support\Facades\Process;
 use Wnx\LaravelBackupRestore\Actions\CheckDependenciesAction;
 use Wnx\LaravelBackupRestore\Databases\DbImporter;
 use Wnx\LaravelBackupRestore\DbImporterFactory;
@@ -31,3 +33,14 @@ it('throws exception if CLI dependency for given connection can not be found', f
 })
     ->expectExceptionMessage('CLI not-existing-cli not found. Please ensure not-existing-cli is in the PATH and available to your PHP process.')
     ->expectException(CliNotFound::class);
+
+it('looks up CLI dependencies with the lookup command of the current platform', function () {
+    Process::fake();
+
+    app(CheckDependenciesAction::class)->execute('mysql');
+
+    $lookup = windows_os() ? 'where' : 'which';
+
+    Process::assertRan(fn (PendingProcess $process) => $process->command === [$lookup, 'mysql']);
+    Process::assertRan(fn (PendingProcess $process) => $process->command === [$lookup, 'gunzip']);
+});

@@ -30,7 +30,8 @@ class CheckDependenciesAction
      */
     protected function checkIfCliExists($cli): void
     {
-        $result = Process::run(['which', $cli]);
+        // Windows has no `which`. `where` is the equivalent.
+        $result = Process::run([windows_os() ? 'where' : 'which', $cli]);
 
         throw_if($result->failed(), CliNotFound::create($cli));
     }
