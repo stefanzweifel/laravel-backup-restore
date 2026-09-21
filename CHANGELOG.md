@@ -5,7 +5,17 @@ All notable changes to `laravel-backup-restore` will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.9.6...HEAD)
+## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.9.7...HEAD)
+
+## [v1.9.7](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.9.6...v1.9.7) - 2026-09-21
+
+### Fixed
+
+- Shell escape db connection parameters ([#123](https://github.com/stefanzweifel/laravel-backup-restore/pull/123))
+
+### Security
+
+- Shell escape db connection parameters ([#123](https://github.com/stefanzweifel/laravel-backup-restore/pull/123))
 
 ## [v1.9.6](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.9.5...v1.9.6) - 2026-08-20
 
