@@ -44,14 +44,14 @@ class PendingRestore
     {
         $filename = "$this->restoreId.{$this->getFileExtensionOfRemoteBackup()}";
 
-        return 'backup-restore-temp'.DIRECTORY_SEPARATOR.$filename;
+        return 'backup-restore-temp/'.$filename;
     }
 
     public function getPathToLocalDecompressedBackup(): string
     {
         $filename = $this->restoreId;
 
-        return 'backup-restore-temp'.DIRECTORY_SEPARATOR.$filename;
+        return 'backup-restore-temp/'.$filename;
     }
 
     public function getAbsolutePathToLocalDecompressedBackup(): string
@@ -66,13 +66,13 @@ class PendingRestore
     public function hasNoDbDumpsDirectory(): bool
     {
         return ! Storage::disk($this->restoreDisk)
-            ->has($this->getPathToLocalDecompressedBackup().DIRECTORY_SEPARATOR.'db-dumps');
+            ->has($this->getPathToLocalDecompressedBackup().'/db-dumps');
     }
 
     public function getAvailableFilesInDbDumpsDirectory(): Collection
     {
         $files = Storage::disk($this->restoreDisk)
-            ->files($this->getPathToLocalDecompressedBackup().DIRECTORY_SEPARATOR.'db-dumps');
+            ->files($this->getPathToLocalDecompressedBackup().'/db-dumps');
 
         return collect($files);
     }
