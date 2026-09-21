@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace Wnx\LaravelBackupRestore\DbImporter\Databases;
 
 use Wnx\LaravelBackupRestore\DbImporter\DbImporter;
+use Wnx\LaravelBackupRestore\DbImporter\Support\PsqlMetaCommandScanner;
 
 class PostgreSql extends DbImporter
 {
     protected string $searchPath = '';
+
+    protected bool $allowMetaCommands = false;
 
     /** Set from the dump's magic number before the command is built. */
     protected bool $customFormatDump = false;
@@ -26,6 +29,17 @@ class PostgreSql extends DbImporter
     public function setSearchPath(string $searchPath): static
     {
         $this->searchPath = $searchPath;
+
+        return $this;
+    }
+
+    /**
+     * Hand meta-commands in the dump to psql instead of refusing them. psql
+     * runs `\!` as a shell command, so only do this for a dump you trust.
+     */
+    public function allowMetaCommands(bool $allowMetaCommands = true): static
+    {
+        $this->allowMetaCommands = $allowMetaCommands;
 
         return $this;
     }
@@ -108,5 +122,20 @@ class PostgreSql extends DbImporter
         $this->guardAgainstMissingDbName();
 
         $this->customFormatDump = $this->dumpIsCustomFormat($dumpFile);
+    }
+
+    /**
+     * @return resource|\Traversable<int, string>
+     */
+    protected function getProcessInput(string $dumpFile)
+    {
+        $stream = $this->openDumpStream($dumpFile);
+
+        // pg_restore reads an archive, not a script, and has no meta-commands.
+        if ($this->customFormatDump || $this->allowMetaCommands) {
+            return $stream;
+        }
+
+        return (new PsqlMetaCommandScanner)->pipe($stream);
     }
 }
