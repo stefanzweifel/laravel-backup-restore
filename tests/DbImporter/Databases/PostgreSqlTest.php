@@ -112,6 +112,28 @@ it('refuses a dump carrying a psql meta-command and runs nothing', function () {
     }
 })->group('pgsql');
 
+it('refuses a dump whose meta-command is not at the start of a line', function (string $template) {
+    $marker = sys_get_temp_dir().'/lbr-pwned-psql-'.uniqid();
+    $dump = pgsqlDumpWith(sprintf($template, $marker));
+
+    try {
+        expect(fn () => pgsqlImporter()->importFromFile($dump))
+            ->toThrow(DumpContainsMetaCommand::class, '\!');
+
+        expect(file_exists($marker))->toBeFalse();
+    } finally {
+        unlink($dump);
+
+        if (file_exists($marker)) {
+            unlink($marker);
+        }
+    }
+})->with([
+    'after a semicolon' => ["SELECT 1; \\! touch %s\nSELECT 2;\n"],
+    'after a block comment' => ["SELECT 1 /* c */ \\! touch %s\n"],
+    'mid-statement' => ["SELECT 1\n\\! touch %s\n;\n"],
+])->group('pgsql');
+
 it('hands meta-commands to psql when the escape hatch is on', function () {
     // Proves the hole the scanner closes is real, and that the opt-out works.
     $marker = sys_get_temp_dir().'/lbr-allowed-psql-'.uniqid();

@@ -69,11 +69,7 @@ class PsqlMetaCommandScanner
                     continue;
                 }
 
-                if ($this->atTopLevel()) {
-                    $this->guardAgainstMetaCommand($line, $lineNumber);
-                }
-
-                $this->consume($line);
+                $this->consume($line, $lineNumber);
 
                 if ($this->atTopLevel() && $this->startsCopyData($line)) {
                     $this->inCopyData = true;
@@ -96,15 +92,17 @@ class PsqlMetaCommandScanner
     }
 
     /**
+     * psql starts a meta-command at an unquoted backslash anywhere, not only at
+     * the start of a line and not only after a semicolon. `SELECT 1; \! touch x`
+     * and `SELECT 1 /* c *\/ \! touch x` both run the shell command.
+     *
      * @throws DumpContainsMetaCommand
      */
-    protected function guardAgainstMetaCommand(string $line, int $lineNumber): void
+    protected function guardAgainstMetaCommand(string $line, int $offset, int $lineNumber): void
     {
-        if (preg_match('/^\s*(\\\\\S*)/', $line, $matches) !== 1) {
-            return;
-        }
+        preg_match('/^\\\\\S*/', substr($line, $offset), $matches);
 
-        $metaCommand = $matches[1];
+        $metaCommand = $matches[0] ?? '\\';
 
         if (in_array($metaCommand, static::ALLOWED_META_COMMANDS, true)) {
             return;
@@ -119,10 +117,14 @@ class PsqlMetaCommandScanner
     }
 
     /**
-     * Carry string, dollar-quote and comment state across lines, so a
-     * backslash inside a value or a function body is not read as a command.
+     * Walks the line, carrying string, dollar-quote and comment state across
+     * lines, and refuses a meta-command at any position where that state is
+     * empty. A backslash inside a value, a function body, a comment or COPY
+     * data is data and is left alone.
+     *
+     * @throws DumpContainsMetaCommand
      */
-    protected function consume(string $line): void
+    protected function consume(string $line, int $lineNumber): void
     {
         $length = strlen($line);
 
@@ -171,7 +173,17 @@ class PsqlMetaCommandScanner
                 continue;
             }
 
+            // A -- comment runs to the end of the line, and psql does not read a
+            // meta-command inside one.
             if ($char === '-' && $next === '-') {
+                return;
+            }
+
+            if ($char === '\\') {
+                $this->guardAgainstMetaCommand($line, $i, $lineNumber);
+
+                // psql reads the rest of the line as the meta-command's
+                // arguments, so nothing after it changes the state we carry.
                 return;
             }
 

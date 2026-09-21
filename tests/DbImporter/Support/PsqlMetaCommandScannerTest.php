@@ -46,6 +46,26 @@ it('refuses a meta-command that pg_dump does not emit', function (string $line, 
     ['\g |touch /tmp/pwned', '\g'],
 ]);
 
+it('refuses a meta-command that is not at the start of a line', function (string $dump, string $expected) {
+    // psql starts a meta-command at an unquoted backslash anywhere, so a
+    // line-anchored check misses all of these.
+    expect(fn () => scan($dump))->toThrow(DumpContainsMetaCommand::class, $expected);
+})->with([
+    'after a semicolon' => ["SELECT 1; \\! touch /tmp/pwned_midline\n", '\!'],
+    'after a tab' => ["CREATE TABLE a(i int);\t\\!touch /tmp/pwned2\n", '\!touch'],
+    'after a block comment' => ["SELECT 1 /* c */ \\! touch /tmp/pwned_block\n", '\!'],
+    'mid-statement, no terminator' => ["SELECT 1\n\\! touch /tmp/pwned_continuation\n;\n", '\!'],
+    'after a closed string' => ["SELECT 'x' \\! touch /tmp/pwned_after_string\n", '\!'],
+]);
+
+it('leaves a backslash that psql would not run as a command', function (string $dump) {
+    expect(scan($dump))->toBe($dump);
+})->with([
+    'inside a line comment' => ["SELECT 1; -- \\! touch /tmp/pwned_comment\n"],
+    'inside a string literal' => ["SELECT '\\! touch /tmp/pwned_string';\n"],
+    'a \\N null in COPY data' => ["COPY t (a, b) FROM stdin;\n1\t\\N\n2\t\\! touch /tmp/pwned_copy\n\\.\n"],
+]);
+
 it('names the line the meta-command is on', function () {
     try {
         scan("SELECT 1;\nSELECT 2;\n\\! touch /tmp/pwned\n");
