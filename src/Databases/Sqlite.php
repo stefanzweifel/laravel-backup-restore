@@ -11,9 +11,12 @@ use Wnx\LaravelBackupRestore\DbImporterFactory;
  */
 class Sqlite extends DbImporter
 {
+    /**
+     * SQLite imports through PDO and runs no binary.
+     */
     public function getCliName(): string
     {
-        return 'sqlite3';
+        return '';
     }
 
     /**

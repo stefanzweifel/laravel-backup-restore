@@ -14,6 +14,20 @@ it('does not throw exception for supported database drivers', function ($connect
     $this->assertTrue(true);
 })->with(['mysql', 'pgsql', 'sqlite']);
 
+it('checks no binary for sqlite, which imports through PDO', function () {
+    config()->set('database.connections.sqlite.dump.dump_binary_path', '/does/not/exist/');
+
+    app(CheckDependenciesAction::class)->execute('sqlite');
+
+    $this->assertTrue(true);
+});
+
+it('checks the binary at the configured dump_binary_path', function () {
+    config()->set('database.connections.mysql.dump.dump_binary_path', '/does/not/exist/');
+
+    app(CheckDependenciesAction::class)->execute('mysql');
+})->throws(CliNotFound::class, '/does/not/exist/mysql');
+
 it('throws exception if CLI dependency for given connection can not be found', function () {
     DbImporterFactory::extend('sqlsrv', new class extends DbImporter
     {
@@ -41,6 +55,7 @@ it('looks up CLI dependencies with the lookup command of the current platform', 
 
     $lookup = windows_os() ? 'where' : 'which';
 
+    // Only the database client is looked up. Compressed dumps are decompressed
+    // in PHP, so there is no gzip or bunzip2 to find.
     Process::assertRan(fn (PendingProcess $process) => $process->command === [$lookup, 'mysql']);
-    Process::assertRan(fn (PendingProcess $process) => $process->command === [$lookup, 'gzip']);
 });

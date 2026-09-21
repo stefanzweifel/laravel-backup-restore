@@ -346,12 +346,11 @@ For PostgreSQL: `PGSQL_HOST`, `PGSQL_PORT`, `PGSQL_USERNAME`, `PGSQL_PASSWORD`, 
 
 The test suite runs on Linux, macOS and Windows.
 
-Restoring a compressed dump shells out to `gzip` or `bunzip2`, and the database
-importers to `mysql`, `psql` or `sqlite3`. Linux and macOS ship these or install
-them with the database client. On Windows, `gzip.exe` and `bunzip2.exe` come
-with Git for Windows but live in a `usr/bin` directory that is not on `PATH` by
-default, and `sqlite3` has to be installed separately. See the `run-tests`
-workflow for how CI sets that up.
+The MySQL and PostgreSQL tests need the `mysql` and `psql` clients on `PATH`.
+Linux and macOS install both with the database itself; on Windows they come with
+the MySQL and PostgreSQL installers. The SQLite tests and every compressed
+fixture run without an external binary. See the `run-tests` workflow for how CI
+sets this up.
 
 ### Testing with Testbench
 

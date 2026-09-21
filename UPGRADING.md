@@ -60,6 +60,21 @@ SQLite it returns an empty string, because SQLite runs no command.
 Use `DbImporterFactory::importerForConnection($connection)` to get the importer that actually runs,
 and `getImportCommand(): array` on it.
 
+### `CheckDependenciesAction` checks different binaries
+
+It no longer checks for `gunzip`. It checks nothing at all for a SQLite connection, because
+SQLite imports through PDO, and `Databases\Sqlite::getCliName()` returns an empty string for the
+same reason — it used to return `'gunzip'`. For MySQL, MariaDB and PostgreSQL it checks the binary
+at the connection's `dump.dump_binary_path`, which is the path the importer actually calls,
+rather than the bare name on `PATH`.
+
+The action is still not called: `RestoreCommand::handle()` has the call commented out, as it was
+before. `dump.dump_binary_path` is `spatie/laravel-backup`'s path to the *dump* binaries rather
+than the import ones, so turning the check on would make a slightly wrong path a hard failure
+before the restore even starts. A custom-format PostgreSQL dump also runs `pg_restore` instead of
+`psql`, and which of the two it will be is only known once the dump is on disk and its magic
+number has been read.
+
 ### A `mariadb` connection now works
 
 `spatie/laravel-backup` supports the `mariadb` driver; this package did not. A connection with
