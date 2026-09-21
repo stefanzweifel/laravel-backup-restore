@@ -9,6 +9,7 @@ use Wnx\LaravelBackupRestore\DbImporter\Compressors\Compressor;
 use Wnx\LaravelBackupRestore\DbImporter\Compressors\CompressorFactory;
 use Wnx\LaravelBackupRestore\DbImporter\Exceptions\CannotSetParameter;
 use Wnx\LaravelBackupRestore\DbImporter\Exceptions\CannotStartImport;
+use Wnx\LaravelBackupRestore\DbImporter\Exceptions\DumpContainsMetaCommand;
 use Wnx\LaravelBackupRestore\DbImporter\Exceptions\ImportFailed;
 
 /**
@@ -17,6 +18,8 @@ use Wnx\LaravelBackupRestore\DbImporter\Exceptions\ImportFailed;
  * Commands are built as an argument array and handed to Symfony's Process,
  * which runs the binary directly. Nothing passes through a shell, so values
  * taken from the configuration need no escaping.
+ *
+ * @phpstan-consistent-constructor
  */
 abstract class DbImporter
 {
@@ -64,7 +67,7 @@ abstract class DbImporter
     abstract public function getBinaryName(): string;
 
     /**
-     * @throws CannotStartImport|ImportFailed
+     * @throws CannotStartImport|DumpContainsMetaCommand|ImportFailed
      */
     public function importFromFile(string $dumpFile): void
     {

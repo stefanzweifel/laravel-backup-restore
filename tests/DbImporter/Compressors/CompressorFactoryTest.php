@@ -8,13 +8,6 @@ use Wnx\LaravelBackupRestore\DbImporter\Compressors\GzipCompressor;
 use Wnx\LaravelBackupRestore\DbImporter\Compressors\NullCompressor;
 use Wnx\LaravelBackupRestore\DbImporter\Exceptions\CannotStartImport;
 
-if (! function_exists('lbrFixture')) {
-    function lbrFixture(string $name): string
-    {
-        return __DIR__.'/../../storage/Laravel/'.$name;
-    }
-}
-
 it('detects the compressor of the committed fixtures', function (string $fixture, string $expected) {
     expect(CompressorFactory::forDumpFile(lbrFixture($fixture)))->toBeInstanceOf($expected);
 })->with([

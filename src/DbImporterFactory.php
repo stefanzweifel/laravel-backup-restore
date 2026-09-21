@@ -13,10 +13,10 @@ use Wnx\LaravelBackupRestore\Databases\MariaDb;
 use Wnx\LaravelBackupRestore\Databases\MySql;
 use Wnx\LaravelBackupRestore\Databases\PostgreSql;
 use Wnx\LaravelBackupRestore\Databases\Sqlite;
-use Wnx\LaravelBackupRestore\DbImporter\DbImporter as FrameworkAgnosticDbImporter;
-use Wnx\LaravelBackupRestore\DbImporter\DbImporterFactory as ImporterForDriver;
 use Wnx\LaravelBackupRestore\DbImporter\Databases\PostgreSql as PostgreSqlImporter;
 use Wnx\LaravelBackupRestore\DbImporter\Databases\Sqlite as SqliteImporter;
+use Wnx\LaravelBackupRestore\DbImporter\DbImporter as FrameworkAgnosticDbImporter;
+use Wnx\LaravelBackupRestore\DbImporter\DbImporterFactory as ImporterForDriver;
 use Wnx\LaravelBackupRestore\Events\DatabaseDumpImportWasSuccessful;
 use Wnx\LaravelBackupRestore\Exceptions\CannotCreateDbImporter;
 
@@ -154,7 +154,7 @@ class DbImporterFactory
 
             public function getImportCommand(string $dumpFile, string $connection): string
             {
-                return static::commandForDisplay($this->importer->getImportCommand());
+                return self::commandForDisplay($this->importer->getImportCommand());
             }
 
             public function importToDatabase(string $dumpFile, string $connection): void

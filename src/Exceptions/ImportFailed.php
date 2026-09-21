@@ -52,9 +52,9 @@ class ImportFailed extends Exception implements BackupRestoreException
      * catch this exception keep working. The original is the previous
      * exception.
      */
-    public static function fromImporter(Throwable $exception): static
+    public static function fromImporter(Throwable $exception): self
     {
-        return new static($exception->getMessage(), previous: $exception);
+        return new self($exception->getMessage(), previous: $exception);
     }
 
     public static function decompressionFailed(string $filename, string $reason): static
