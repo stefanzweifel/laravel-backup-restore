@@ -26,7 +26,8 @@
         "spatie/temporary-directory": "^2.0"
     },
     "suggest": {
-        "ext-bz2": "Required to restore bzip2-compressed database dumps."
+        "ext-bz2": "Required to restore bzip2-compressed database dumps.",
+        "ext-pdo_sqlite": "Required to restore SQLite database dumps."
     },
     "require-dev": {
         "larastan/larastan": "^3.8",
