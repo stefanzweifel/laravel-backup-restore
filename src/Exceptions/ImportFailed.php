@@ -31,9 +31,11 @@ class ImportFailed extends Exception implements BackupRestoreException
     {
         $exitCode = $process->exitCode();
 
+        // The property keeps the full path; the message names the file only,
+        // because the temp path is long and says nothing useful.
         $subject = $dumpFile === null
             ? 'The database import'
-            : "The import of \"{$dumpFile}\"";
+            : 'The import of "'.basename($dumpFile).'"';
 
         return new static(
             exitCode: $exitCode,
@@ -51,7 +53,7 @@ class ImportFailed extends Exception implements BackupRestoreException
             output: null,
             errorOutput: null,
             dumpFile: $filename,
-            message: "Could not decompress the dump file \"{$filename}\": {$reason}.",
+            message: 'Could not decompress the dump file "'.basename($filename)."\": {$reason}.",
         );
     }
 

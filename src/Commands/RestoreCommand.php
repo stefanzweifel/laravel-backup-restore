@@ -116,27 +116,40 @@ class RestoreCommand extends Command
         error('Restore failed.');
         error($exception->getMessage());
 
-        $hint = $exception->hint();
-
-        if ($hint !== null) {
-            warning($hint);
-        }
+        $this->writeHint($exception->hint());
 
         if ($this->output->isVerbose()) {
             warning($exception::class);
 
             if ($exception instanceof ImportFailed) {
                 warning('Exit code: '.($exception->exitCode ?? 'unknown'));
-
-                if ($exception->errorOutput !== null && trim($exception->errorOutput) !== '') {
-                    warning($exception->errorOutput);
-                }
+                $this->writeHint($exception->errorOutput);
             }
 
-            warning($exception->getTraceAsString());
+            $this->line($exception->getTraceAsString());
         }
 
         return self::FAILURE;
+    }
+
+    /**
+     * Laravel\Prompts\warning() draws one box per line, which turns captured
+     * stderr into a wall of boxes. Print anything multi-line plainly instead.
+     */
+    private function writeHint(?string $hint): void
+    {
+        if ($hint === null || trim($hint) === '') {
+            return;
+        }
+
+        if (str_contains($hint, "\n")) {
+            $this->newLine();
+            $this->line($hint);
+
+            return;
+        }
+
+        warning($hint);
     }
 
     private function getDestinationDiskToRestoreFrom(): string

@@ -150,7 +150,7 @@ it('carries the exit code and the process output for ImportFailed', function () 
         ->and($exception->output)->toContain('some output')
         ->and($exception->errorOutput)->toContain('some error output')
         ->and($exception->dumpFile)->toBe('/tmp/dump.sql')
-        ->and($exception->getMessage())->toBe('The import of "/tmp/dump.sql" failed with exit code 3.')
+        ->and($exception->getMessage())->toBe('The import of "dump.sql" failed with exit code 3.')
         ->and($exception->hint())->toContain('some error output');
 });
 
