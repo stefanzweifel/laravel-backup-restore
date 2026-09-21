@@ -17,12 +17,11 @@ use Wnx\LaravelBackupRestore\Actions\DecompressBackupAction;
 use Wnx\LaravelBackupRestore\Actions\DownloadBackupAction;
 use Wnx\LaravelBackupRestore\Actions\ImportDumpAction;
 use Wnx\LaravelBackupRestore\Actions\ResetDatabaseAction;
-use Wnx\LaravelBackupRestore\Exceptions\CannotCreateDbImporter;
-use Wnx\LaravelBackupRestore\Exceptions\CliNotFound;
-use Wnx\LaravelBackupRestore\Exceptions\DecompressionFailed;
+use Wnx\LaravelBackupRestore\Actions\VerifyDumpsAction;
+use Wnx\LaravelBackupRestore\Exceptions\BackupRestoreException;
 use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
+use Wnx\LaravelBackupRestore\Exceptions\InvalidHealthCheck;
 use Wnx\LaravelBackupRestore\Exceptions\NoBackupsFound;
-use Wnx\LaravelBackupRestore\Exceptions\NoDatabaseDumpsFound;
 use Wnx\LaravelBackupRestore\HealthChecks\HealthCheck;
 use Wnx\LaravelBackupRestore\HealthChecks\Result;
 use Wnx\LaravelBackupRestore\PendingRestore;
@@ -47,19 +46,12 @@ class RestoreCommand extends Command
 
     public $description = 'Restore a database backup dump from a given disk to a database connection.';
 
-    /**
-     * @throws NoDatabaseDumpsFound
-     * @throws NoBackupsFound
-     * @throws CannotCreateDbImporter
-     * @throws DecompressionFailed
-     * @throws ImportFailed
-     * @throws CliNotFound
-     */
     public function handle(
         CheckDependenciesAction $checkDependenciesAction,
         DownloadBackupAction $downloadBackupAction,
         DecompressBackupAction $decompressBackupAction,
         ResetDatabaseAction $resetDatabaseAction,
+        VerifyDumpsAction $verifyDumpsAction,
         ImportDumpAction $importDumpAction,
         CleanupLocalBackupAction $cleanupLocalBackupAction
     ): int {
@@ -67,41 +59,84 @@ class RestoreCommand extends Command
             ! $this->input->isInteractive() || windows_os() || app()->runningUnitTests()
         );
 
-        $connection = $this->option('connection') ?? config('backup.backup.source.databases')[0];
+        // Set once the restore is past the confirmation prompt, so that the
+        // finally block only cleans up files this run actually created.
+        $startedRestore = null;
 
-        // Dependencies-check is currently disabled. Custom binary paths are currently not supported by the Action.
-        // $checkDependenciesAction->execute($connection);
+        try {
+            $connection = $this->option('connection') ?? config('backup.backup.source.databases')[0];
 
-        $diskToRestoreFrom = $this->getDestinationDiskToRestoreFrom();
+            // Dependencies-check is currently disabled. Custom binary paths are currently not supported by the Action.
+            // $checkDependenciesAction->execute($connection);
 
-        $pendingRestore = PendingRestore::make(
-            disk: $diskToRestoreFrom,
-            backup: $this->getBackupToRestore($diskToRestoreFrom),
-            connection: $connection,
-            backupPassword: $this->getPassword(),
-        );
+            $diskToRestoreFrom = $this->getDestinationDiskToRestoreFrom();
 
-        if (! $this->confirmRestoreProcess($pendingRestore)) {
-            warning('Abort.');
+            $pendingRestore = PendingRestore::make(
+                disk: $diskToRestoreFrom,
+                backup: $this->getBackupToRestore($diskToRestoreFrom),
+                connection: $connection,
+                backupPassword: $this->getPassword(),
+            );
 
-            return self::INVALID;
+            if (! $this->confirmRestoreProcess($pendingRestore)) {
+                warning('Abort.');
+
+                return self::INVALID;
+            }
+
+            $startedRestore = $pendingRestore;
+
+            $downloadBackupAction->execute($pendingRestore);
+            $decompressBackupAction->execute($pendingRestore);
+
+            // Find and check the dumps before --reset drops anything. An empty
+            // or truncated dump otherwise leaves the database wiped and the
+            // original data gone.
+            $verifyDumpsAction->execute($pendingRestore, verifyContent: (bool) $this->option('reset'));
+
+            if ($this->option('reset')) {
+                $resetDatabaseAction->execute($pendingRestore);
+            }
+
+            $importDumpAction->execute($pendingRestore);
+
+            return $this->runHealthChecks($pendingRestore);
+        } catch (BackupRestoreException $exception) {
+            return $this->renderFailure($exception);
+        } finally {
+            if ($startedRestore !== null && ! $this->option('keep')) {
+                info('Cleaning up …');
+                $cleanupLocalBackupAction->execute($startedRestore);
+            }
+        }
+    }
+
+    private function renderFailure(BackupRestoreException $exception): int
+    {
+        error('Restore failed.');
+        error($exception->getMessage());
+
+        $hint = $exception->hint();
+
+        if ($hint !== null) {
+            warning($hint);
         }
 
-        $downloadBackupAction->execute($pendingRestore);
-        $decompressBackupAction->execute($pendingRestore);
+        if ($this->output->isVerbose()) {
+            warning($exception::class);
 
-        if ($this->option('reset')) {
-            $resetDatabaseAction->execute($pendingRestore);
+            if ($exception instanceof ImportFailed) {
+                warning('Exit code: '.($exception->exitCode ?? 'unknown'));
+
+                if ($exception->errorOutput !== null && trim($exception->errorOutput) !== '') {
+                    warning($exception->errorOutput);
+                }
+            }
+
+            warning($exception->getTraceAsString());
         }
 
-        $importDumpAction->execute($pendingRestore);
-
-        if (! $this->option('keep')) {
-            info('Cleaning up …');
-            $cleanupLocalBackupAction->execute($pendingRestore);
-        }
-
-        return $this->runHealthChecks($pendingRestore);
+        return self::FAILURE;
     }
 
     private function getDestinationDiskToRestoreFrom(): string
@@ -142,29 +177,27 @@ class RestoreCommand extends Command
             ->filter(fn ($file) => Str::endsWith($file, '.zip'));
 
         if ($listOfBackups->count() === 0) {
-            error("No backups found on {$disk}.");
-            throw NoBackupsFound::onDisk($disk);
+            throw NoBackupsFound::onDisk($disk, $name);
         }
 
         if ($this->option('backup') === 'latest') {
             return $listOfBackups->last();
         }
 
-        $labelLength = 60;
+        $backups = $listOfBackups->values()->map(fn (string $path): array => [
+            'path' => $path,
+            'size' => Format::humanReadableSize(Storage::disk($disk)->size($path)),
+        ]);
 
-        foreach ($listOfBackups as $key => $path) {
-            $size = Format::humanReadableSize(Storage::disk($disk)->size($path));
-            $labelLength = max($labelLength, strlen($path.$size) + 5);
-            $listOfBackups[$key] = [
-                'path' => $path,
-                'size' => $size,
-            ];
-        }
+        $labelLength = $backups->reduce(
+            fn (int $carry, array $backup): int => max($carry, strlen($backup['path'].$backup['size']) + 5),
+            60
+        );
 
         return select(
             label: 'Which backup should be restored?',
-            options: $this->getBackupOptions($listOfBackups, $labelLength),
-            default: $listOfBackups->last()['path'],
+            options: $this->getBackupOptions($backups, $labelLength)->all(),
+            default: $backups->last()['path'],
             scroll: 10
         );
     }
@@ -184,10 +217,18 @@ class RestoreCommand extends Command
         return $password;
     }
 
+    /**
+     * @throws InvalidHealthCheck
+     */
     private function runHealthChecks(PendingRestore $pendingRestore): int
     {
         $failedResults = collect(config('backup-restore.health-checks'))
-            ->map(fn ($check) => $check::new())
+            ->each(function ($check) {
+                if (! is_string($check) || ! is_a($check, HealthCheck::class, true)) {
+                    throw InvalidHealthCheck::notAHealthCheck(is_string($check) ? $check : get_debug_type($check));
+                }
+            })
+            ->map(fn (string $check) => $check::new())
             ->map(fn (HealthCheck $check) => $check->run($pendingRestore))
             ->filter(fn (Result $result) => $result->status === self::FAILURE);
 
@@ -211,20 +252,26 @@ class RestoreCommand extends Command
             'username' => Arr::get($connectionConfig, 'username'),
         ])->filter()->map(fn ($value, $key) => "{$key}: {$value}")->implode(', ');
 
-        return confirm(
-            label: sprintf(
-                'Proceed to restore "%s" using the "%s" database connection. (%s)',
-                $pendingRestore->backup,
-                $pendingRestore->connection,
-                $connectionInformationForConfirmation
-            ),
-            default: true
+        $label = sprintf(
+            'Proceed to restore "%s" using the "%s" database connection. (%s)',
+            $pendingRestore->backup,
+            $pendingRestore->connection,
+            $connectionInformationForConfirmation
         );
+
+        if ($this->option('reset')) {
+            $label .= ' This drops all tables in that database and cannot be undone.';
+        }
+
+        return confirm(label: $label, default: true);
     }
 
+    /**
+     * @param  Collection<int, array{path: string, size: string}>  $listOfBackups
+     */
     protected function getBackupOptions(Collection $listOfBackups, int $labelLength): Collection
     {
-        return $listOfBackups->mapWithKeys(fn ($backup): array => [
+        return $listOfBackups->mapWithKeys(fn (array $backup): array => [
             $backup['path'] => str_pad($backup['path'].' ', ($labelLength - strlen($backup['size'])), '.', STR_PAD_RIGHT).' '.$backup['size'],
         ]);
     }
