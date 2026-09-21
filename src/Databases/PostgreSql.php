@@ -29,15 +29,11 @@ class PostgreSql extends DbImporter
         $host = config("database.connections.{$connection}.host");
         $port = config("database.connections.{$connection}.port");
         $database = config("database.connections.{$connection}.database");
+
         if (str($dumpFile)->endsWith('sql')) {
             return collect([
-                $this->dumpBinaryPath.'psql',
-                'postgresql://'.
-                urldecode($username).':'.
-                urlencode($password).'@'.
-                $host.':'.
-                $port.'/'.
-                $database,
+                escapeshellarg($this->dumpBinaryPath.'psql'),
+                escapeshellarg($this->getConnectionString($username, $password, $host, $port, $database)),
                 '< '.escapeshellarg($dumpFile),
             ])->implode(' ');
         }
@@ -45,10 +41,10 @@ class PostgreSql extends DbImporter
         if ($this->isBinaryDump($dumpFile)) {
             return sprintf(
                 'pg_restore --verbose --no-owner --host=%s --port=%s --username=%s --dbname=%s %s',
-                escapeshellarg($host),
-                escapeshellarg($port),
-                escapeshellarg($username),
-                escapeshellarg($database),
+                escapeshellarg((string) $host),
+                escapeshellarg((string) $port),
+                escapeshellarg((string) $username),
+                escapeshellarg((string) $database),
                 escapeshellarg($dumpFile)
             );
         }
@@ -63,13 +59,8 @@ class PostgreSql extends DbImporter
         return collect([
             $decompressCommand,
             '|',
-            $this->dumpBinaryPath.'psql',
-            'postgresql://'.
-            urldecode($username).':'.
-            urldecode($password).'@'.
-            $host.':'.
-            $port.'/'.
-            $database,
+            escapeshellarg($this->dumpBinaryPath.'psql'),
+            escapeshellarg($this->getConnectionString($username, $password, $host, $port, $database)),
         ])->implode(' ');
     }
 
@@ -83,5 +74,20 @@ class PostgreSql extends DbImporter
         return str($dumpFile)->endsWith([
             '.backup',
         ]);
+    }
+
+    /**
+     * The connection string is handed to the shell as a single argument, so it is
+     * escaped as a whole. The values that make up its userinfo and path are
+     * percent-encoded on top of that, so they cannot alter the URI either.
+     */
+    private function getConnectionString(mixed $username, mixed $password, mixed $host, mixed $port, mixed $database): string
+    {
+        return 'postgresql://'.
+            rawurlencode((string) $username).':'.
+            rawurlencode((string) $password).'@'.
+            $host.':'.
+            $port.'/'.
+            rawurlencode((string) $database);
     }
 }
