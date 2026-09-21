@@ -117,7 +117,7 @@ it('throws NoBackupsFound exception if no backups are found on given disk', func
     ]);
 })
     ->throws(NoBackupsFound::class)
-    ->expectExceptionMessage('No backups found on disk local.');
+    ->expectExceptionMessage('No backups found on disk "local".');
 
 it('asks for password if password is not passed to command as an option', function () {
     $this->artisan(RestoreCommand::class, [
