@@ -40,5 +40,12 @@ it('throws no database dumps found exception if backup does not contain any data
 
     app(DownloadBackupAction::class)->execute($pendingRestore);
     app(DecompressBackupAction::class)->execute($pendingRestore);
-    app(ImportDumpAction::class)->execute($pendingRestore);
-})->throws(NoDatabaseDumpsFound::class)->expectExceptionMessage('not-a-sql-file.txt');
+
+    try {
+        app(ImportDumpAction::class)->execute($pendingRestore);
+        $this->fail('Expected NoDatabaseDumpsFound to be thrown.');
+    } catch (NoDatabaseDumpsFound $exception) {
+        expect($exception->getMessage())->toBe('The backup "Laravel/2023-03-11-no-dumps.zip" contains no database dumps.')
+            ->and($exception->hint())->toContain('not-a-sql-file.txt');
+    }
+});

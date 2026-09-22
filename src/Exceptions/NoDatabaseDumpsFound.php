@@ -7,18 +7,41 @@ namespace Wnx\LaravelBackupRestore\Exceptions;
 use Exception;
 use Wnx\LaravelBackupRestore\PendingRestore;
 
-class NoDatabaseDumpsFound extends Exception
+class NoDatabaseDumpsFound extends Exception implements BackupRestoreException
 {
+    /**
+     * @param  list<string>  $filesInBackup
+     */
+    protected function __construct(
+        public readonly string $backup,
+        public readonly array $filesInBackup,
+        string $message,
+    ) {
+        parent::__construct($message);
+    }
+
     public static function notFoundInBackup(PendingRestore $pendingRestore): self
     {
-
-        $files = $pendingRestore->getAvailableFilesInDbDumpsDirectory()->implode("\n");
-
-        return new static(<<<TXT
-            "No database dumps found in backup `{$pendingRestore->backup}`."
-            "Found files in db-dumps directory:"
-            $files
-        TXT
+        return new static(
+            backup: $pendingRestore->backup,
+            filesInBackup: array_values($pendingRestore->getAvailableFilesInDbDumpsDirectory()->all()),
+            message: "The backup \"{$pendingRestore->backup}\" contains no database dumps.",
         );
+    }
+
+    public function hint(): ?string
+    {
+        $configHint = 'Check that the backup was created with a database source configured in config/backup.php.';
+
+        if ($this->filesInBackup === []) {
+            return "The archive's db-dumps directory is empty or missing. ".$configHint;
+        }
+
+        $files = implode(', ', array_map(
+            static fn (string $file): string => basename($file),
+            $this->filesInBackup
+        ));
+
+        return "The archive's db-dumps directory contains: {$files}. ".$configHint;
     }
 }

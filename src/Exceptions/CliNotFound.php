@@ -6,10 +6,25 @@ namespace Wnx\LaravelBackupRestore\Exceptions;
 
 use Exception;
 
-class CliNotFound extends Exception
+class CliNotFound extends Exception implements BackupRestoreException
 {
+    protected function __construct(
+        public readonly string $cli,
+        string $message,
+    ) {
+        parent::__construct($message);
+    }
+
     public static function create(string $cli): self
     {
-        return new static("CLI $cli not found. Please ensure $cli is in the PATH and available to your PHP process.");
+        return new static(
+            cli: $cli,
+            message: "The \"{$cli}\" binary was not found.",
+        );
+    }
+
+    public function hint(): ?string
+    {
+        return "Install {$this->cli} and make sure it is on the PATH of the PHP process, or set dump.dump_binary_path on the connection in config/database.php.";
     }
 }

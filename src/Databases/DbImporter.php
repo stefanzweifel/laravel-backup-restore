@@ -23,7 +23,7 @@ abstract class DbImporter
     protected function checkIfImportWasSuccessful(ProcessResult $process, string $dumpFile): void
     {
         if (! $process->successful()) {
-            throw ImportFailed::processDidNotEndSuccessfully($process);
+            throw ImportFailed::processDidNotEndSuccessfully($process, $dumpFile);
         }
 
         event(new DatabaseDumpImportWasSuccessful($dumpFile));
