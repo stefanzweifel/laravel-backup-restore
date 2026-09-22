@@ -7,6 +7,7 @@ namespace Wnx\LaravelBackupRestore\Exceptions;
 use Exception;
 use Illuminate\Contracts\Process\ProcessResult;
 use Throwable;
+use Wnx\LaravelBackupRestore\DbImporter\Exceptions\ImportFailed as ImporterFailed;
 
 class ImportFailed extends Exception implements BackupRestoreException
 {
@@ -24,8 +25,10 @@ class ImportFailed extends Exception implements BackupRestoreException
         public readonly ?string $errorOutput,
         public readonly ?string $dumpFile,
         string $message,
+        private readonly ?string $hintText = null,
+        ?Throwable $previous = null,
     ) {
-        parent::__construct($message);
+        parent::__construct($message, 0, $previous);
     }
 
     public static function processDidNotEndSuccessfully(ProcessResult $process, ?string $dumpFile = null): static
@@ -52,9 +55,18 @@ class ImportFailed extends Exception implements BackupRestoreException
      * catch this exception keep working. The original is the previous
      * exception.
      */
-    public static function fromImporter(Throwable $exception): self
+    public static function fromImporter(Throwable $exception, ?string $dumpFile = null): static
     {
-        return new self($exception->getMessage(), previous: $exception);
+        $failedWhileRunning = $exception instanceof ImporterFailed;
+
+        return new static(
+            exitCode: $failedWhileRunning ? $exception->exitCode : null,
+            output: $failedWhileRunning ? $exception->output : null,
+            errorOutput: $failedWhileRunning ? $exception->errorOutput : null,
+            dumpFile: $dumpFile,
+            message: $exception->getMessage(),
+            previous: $exception,
+        );
     }
 
     public static function decompressionFailed(string $filename, string $reason): static
@@ -65,13 +77,14 @@ class ImportFailed extends Exception implements BackupRestoreException
             errorOutput: null,
             dumpFile: $filename,
             message: 'Could not decompress the dump file "'.basename($filename)."\": {$reason}.",
+            hintText: 'Supported compression formats are gzip (.gz) and bzip2 (.bz2).',
         );
     }
 
     public function hint(): ?string
     {
-        if ($this->exitCode === null) {
-            return 'Supported compression formats are gzip (.gz) and bzip2 (.bz2).';
+        if ($this->hintText !== null) {
+            return $this->hintText;
         }
 
         $stream = $this->errorOutput !== null && trim($this->errorOutput) !== ''
@@ -79,7 +92,11 @@ class ImportFailed extends Exception implements BackupRestoreException
             : $this->output;
 
         if ($stream === null || trim($stream) === '') {
-            return 'The import command wrote nothing to stdout or stderr. Run the command with -v for the full context.';
+            // A failure that never reached a process — a missing dump file, a
+            // refused meta-command — says everything in its own message.
+            return $this->exitCode === null
+                ? null
+                : 'The import command wrote nothing to stdout or stderr. Run the command with -v for the full context.';
         }
 
         $lines = explode("\n", trim($stream));

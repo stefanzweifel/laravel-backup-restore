@@ -18,6 +18,11 @@ class CannotStartImport extends RuntimeException
         return new self("The dump file `{$dumpFile}` does not exist or is not readable.");
     }
 
+    public static function binaryCouldNotBeStarted(string $binary, string $reason): self
+    {
+        return new self("The import binary `{$binary}` could not be started: {$reason}");
+    }
+
     public static function missingExtension(string $extension, string $dumpFile): self
     {
         return new self("The dump file `{$dumpFile}` is compressed with {$extension}, but the PHP extension `ext-{$extension}` is not loaded.");

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Event;
 use Wnx\LaravelBackupRestore\Databases\DbImporter;
 use Wnx\LaravelBackupRestore\Databases\MariaDb;
 use Wnx\LaravelBackupRestore\Databases\MySql;
@@ -11,7 +12,9 @@ use Wnx\LaravelBackupRestore\DbImporter\Databases\MySql as MySqlImporter;
 use Wnx\LaravelBackupRestore\DbImporter\Databases\PostgreSql as PostgreSqlImporter;
 use Wnx\LaravelBackupRestore\DbImporter\Databases\Sqlite as SqliteImporter;
 use Wnx\LaravelBackupRestore\DbImporterFactory;
+use Wnx\LaravelBackupRestore\Events\DatabaseDumpImportWasSuccessful;
 use Wnx\LaravelBackupRestore\Exceptions\CannotCreateDbImporter;
+use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 
 // extend() writes to a static registry, which would otherwise leak between
 // tests and make the order they run in matter.
@@ -153,3 +156,35 @@ class CustomSqlServerImporter extends DbImporter
         return 'sqlsrv';
     }
 }
+
+it('reports a failure from a custom framework-agnostic importer as a BackupRestoreException', function () {
+    // Everything the command catches implements BackupRestoreException. An
+    // importer registered through extend() has to be held to that too, or the
+    // user gets a stack trace instead of a message.
+    DbImporterFactory::extend(
+        'sqlite',
+        fn (array $config) => DbImporterFactory::importerForConnection('sqlite')
+    );
+
+    $importer = DbImporterFactory::createFromConnection('sqlite');
+
+    expect(fn () => $importer->importToDatabase('/does/not/exist.sql', 'sqlite'))
+        ->toThrow(ImportFailed::class);
+});
+
+it('dispatches the success event for a custom framework-agnostic importer', function () {
+    Event::fake();
+
+    DbImporterFactory::extend(
+        'sqlite',
+        fn (array $config) => DbImporterFactory::importerForConnection('sqlite')
+    );
+
+    $dumpFile = __DIR__.'/storage/Laravel/2023-02-28-sqlite-no-compression-no-encryption.sql';
+
+    DbImporterFactory::createFromConnection('sqlite')->importToDatabase($dumpFile, 'sqlite');
+
+    Event::assertDispatched(
+        fn (DatabaseDumpImportWasSuccessful $event) => $event->absolutePathToDump === $dumpFile
+    );
+});

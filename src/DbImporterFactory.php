@@ -17,7 +17,7 @@ use Wnx\LaravelBackupRestore\DbImporter\Databases\PostgreSql as PostgreSqlImport
 use Wnx\LaravelBackupRestore\DbImporter\Databases\Sqlite as SqliteImporter;
 use Wnx\LaravelBackupRestore\DbImporter\DbImporter as FrameworkAgnosticDbImporter;
 use Wnx\LaravelBackupRestore\DbImporter\DbImporterFactory as ImporterForDriver;
-use Wnx\LaravelBackupRestore\Events\DatabaseDumpImportWasSuccessful;
+use Wnx\LaravelBackupRestore\DbImporter\Exceptions\CannotStartImport;
 use Wnx\LaravelBackupRestore\Exceptions\CannotCreateDbImporter;
 
 /**
@@ -52,7 +52,7 @@ class DbImporterFactory
 
         try {
             $importer = ImporterForDriver::forDriver($driver);
-        } catch (\Throwable) {
+        } catch (CannotStartImport) {
             throw CannotCreateDbImporter::unsupportedDriver($driver);
         }
 
@@ -157,11 +157,14 @@ class DbImporterFactory
                 return self::commandForDisplay($this->importer->getImportCommand());
             }
 
-            public function importToDatabase(string $dumpFile, string $connection): void
+            protected function forwardsToDbImporter(): bool
             {
-                $this->importer->importFromFile($dumpFile);
+                return true;
+            }
 
-                event(new DatabaseDumpImportWasSuccessful($dumpFile));
+            protected function resolveImporter(string $connection): FrameworkAgnosticDbImporter
+            {
+                return $this->importer;
             }
         };
     }

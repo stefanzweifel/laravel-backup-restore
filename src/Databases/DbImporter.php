@@ -6,11 +6,13 @@ namespace Wnx\LaravelBackupRestore\Databases;
 
 use Illuminate\Contracts\Process\ProcessResult;
 use Illuminate\Support\Facades\Process;
+use Wnx\LaravelBackupRestore\DbImporter\DbImporter as FrameworkAgnosticDbImporter;
 use Wnx\LaravelBackupRestore\DbImporter\Exceptions\CannotStartImport;
 use Wnx\LaravelBackupRestore\DbImporter\Exceptions\DumpContainsMetaCommand;
 use Wnx\LaravelBackupRestore\DbImporter\Exceptions\ImportFailed as ImporterFailed;
 use Wnx\LaravelBackupRestore\DbImporterFactory;
 use Wnx\LaravelBackupRestore\Events\DatabaseDumpImportWasSuccessful;
+use Wnx\LaravelBackupRestore\Exceptions\CannotCreateDbImporter;
 use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 
 /**
@@ -42,9 +44,9 @@ abstract class DbImporter
     {
         if ($this->forwardsToDbImporter()) {
             try {
-                DbImporterFactory::importerForConnection($connection)->importFromFile($dumpFile);
+                $this->resolveImporter($connection)->importFromFile($dumpFile);
             } catch (ImporterFailed|CannotStartImport|DumpContainsMetaCommand $exception) {
-                throw ImportFailed::fromImporter($exception);
+                throw ImportFailed::fromImporter($exception, $dumpFile);
             }
 
             event(new DatabaseDumpImportWasSuccessful($dumpFile));
@@ -84,6 +86,18 @@ abstract class DbImporter
     protected function forwardsToDbImporter(): bool
     {
         return false;
+    }
+
+    /**
+     * The importer the forwarding path runs. DbImporterFactory::wrap()
+     * overrides this to return the instance it already holds, so both routes
+     * share the try/catch above and neither lets an importer exception escape.
+     *
+     * @throws CannotCreateDbImporter
+     */
+    protected function resolveImporter(string $connection): FrameworkAgnosticDbImporter
+    {
+        return DbImporterFactory::importerForConnection($connection);
     }
 
     /**

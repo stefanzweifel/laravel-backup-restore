@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Wnx\LaravelBackupRestore\DbImporter;
 
+use Symfony\Component\Process\Exception\ProcessTimedOutException;
+use Symfony\Component\Process\Exception\RuntimeException as SymfonyProcessException;
 use Symfony\Component\Process\Process;
 use Wnx\LaravelBackupRestore\DbImporter\Compressors\Compressor;
 use Wnx\LaravelBackupRestore\DbImporter\Compressors\CompressorFactory;
@@ -90,7 +92,7 @@ abstract class DbImporter
     protected function prepareImport(string $dumpFile): void {}
 
     /**
-     * @throws ImportFailed
+     * @throws ImportFailed|CannotStartImport
      */
     protected function runImport(string $dumpFile): void
     {
@@ -106,6 +108,20 @@ abstract class DbImporter
 
         try {
             $process->run();
+        } catch (ProcessTimedOutException) {
+            $process->stop(0);
+
+            throw ImportFailed::timedOut($this->timeout);
+        } catch (SymfonyProcessException $exception) {
+            // proc_open refused to start the process at all. The usual cause is
+            // a binary that is not on PATH, which is how a missing client
+            // surfaces on Windows; on Linux it comes back as exit code 127.
+            $process->stop(0);
+
+            throw CannotStartImport::binaryCouldNotBeStarted(
+                $this->importBinaryPath.$this->getBinaryName(),
+                $exception->getMessage(),
+            );
         } catch (\Throwable $throwable) {
             $process->stop(0);
 
@@ -218,7 +234,10 @@ abstract class DbImporter
 
     public function setImportBinaryPath(string $importBinaryPath): static
     {
-        if ($importBinaryPath !== '' && ! str_ends_with($importBinaryPath, DIRECTORY_SEPARATOR)) {
+        // Accept a path that already ends in either separator. On Windows
+        // DIRECTORY_SEPARATOR is a backslash, so a configured "/usr/bin/"
+        // would otherwise gain one before the binary name.
+        if ($importBinaryPath !== '' && ! str_ends_with($importBinaryPath, '/') && ! str_ends_with($importBinaryPath, DIRECTORY_SEPARATOR)) {
             $importBinaryPath .= DIRECTORY_SEPARATOR;
         }
 
@@ -285,7 +304,9 @@ abstract class DbImporter
             throw CannotStartImport::create('Could not create a temporary file for the import.');
         }
 
-        // Narrow the permissions before anything is written to it.
+        // Narrow the permissions before anything is written to it. This is a
+        // no-op on Windows, where tempnam() already creates the file under the
+        // user's own temp directory.
         chmod($path, 0600);
         file_put_contents($path, $contents);
 

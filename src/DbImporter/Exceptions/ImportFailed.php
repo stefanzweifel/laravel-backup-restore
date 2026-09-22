@@ -40,6 +40,11 @@ class ImportFailed extends RuntimeException
         );
     }
 
+    public static function timedOut(int $timeout): self
+    {
+        return new self("The import did not finish within {$timeout} seconds.", -1, '', '');
+    }
+
     public static function statementFailed(string $message): self
     {
         return new self("The import failed: {$message}", 1, '', $message);
