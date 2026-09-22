@@ -18,27 +18,32 @@ jobs:
             # prefer-lowest,
             prefer-stable,
           ]
+        # The constraints below deliberately avoid "^". On Windows, composer is a
+        # .bat file, so the command line goes through cmd.exe, which eats "^" as
+        # its escape character: "^11.0" arrives as "11.0", an exact-version match.
+        # "carbon:^3.8" became "carbon:3.8", which pins 3.8.0 — a release with a
+        # security advisory — and the install fails.
         include:
           - laravel: 13.*
-            testbench: ^11.0
-            carbon: ^3.8
+            testbench: 11.*
+            carbon: 3.*
           - laravel: 12.*
-            testbench: ^10.0
-            carbon: ^3.8
+            testbench: 10.*
+            carbon: 3.*
           # Windows and macOS run one representative combination each: newest PHP,
           # newest Laravel. Running the full matrix on three operating systems
           # would be 12 jobs for little extra signal.
           - os: windows-latest
             php: 8.5
             laravel: 13.*
-            testbench: ^11.0
-            carbon: ^3.8
+            testbench: 11.*
+            carbon: 3.*
             stability: prefer-stable
           - os: macos-latest
             php: 8.5
             laravel: 13.*
-            testbench: ^11.0
-            carbon: ^3.8
+            testbench: 11.*
+            carbon: 3.*
             stability: prefer-stable
 
     name: P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.stability }} - ${{ matrix.os }}
