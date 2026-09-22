@@ -46,7 +46,10 @@ abstract class DbImporter
 
     public function setDumpBinaryPath(string $dumpBinaryPath): self
     {
-        if ($dumpBinaryPath !== '' && ! str_ends_with($dumpBinaryPath, DIRECTORY_SEPARATOR)) {
+        // Accept a path that already ends in either separator. On Windows
+        // DIRECTORY_SEPARATOR is a backslash, so a configured "/usr/bin/"
+        // would otherwise become "/usr/bin/" plus a backslash plus "mysql".
+        if ($dumpBinaryPath !== '' && ! str_ends_with($dumpBinaryPath, '/') && ! str_ends_with($dumpBinaryPath, DIRECTORY_SEPARATOR)) {
             $dumpBinaryPath .= DIRECTORY_SEPARATOR;
         }
 

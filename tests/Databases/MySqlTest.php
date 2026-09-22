@@ -41,7 +41,7 @@ it('uses default binary path to import mysql dump', function () {
     );
 
     Process::assertRan(function (PendingProcess $process) {
-        assertStringContainsString("'mysql'", $process->command);
+        assertStringContainsString(escapeshellarg('mysql'), $process->command);
 
         return true;
     });
@@ -181,5 +181,5 @@ it('shell-escapes the configured binary path in the mysql import command', funct
 
     $command = app(MySql::class)->getImportCommand('/tmp/backup.sql', 'mysql-restore');
 
-    expect($command)->toContain(escapeshellarg('/usr/bin/;touch /tmp/lbr_security_test/mysql'));
+    expect($command)->toContain(escapeshellarg('/usr/bin/;touch /tmp/lbr_security_test'.DIRECTORY_SEPARATOR.'mysql'));
 });

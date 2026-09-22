@@ -39,7 +39,9 @@ it('excludes dump files whose basename contains shell metacharacters (CWE-78)', 
     expect($dumps)->toHaveCount(1)
         ->and($dumps->values()->first())->toEndWith('legitimate.sql');
 })->with([
-    'semicolon injection' => ['backup.sql;touch /tmp/lbr_pwned;#.sql'],
+    // No "/" in the name: Windows reads it as a directory separator and the
+    // file cannot be created at all.
+    'semicolon injection' => ['backup.sql;touch lbr_pwned;#.sql'],
     'pipe injection' => ['backup|whoami.sql'],
     'command substitution' => ['backup$(id).sql'],
     'backtick substitution' => ['backup`id`.sql'],

@@ -162,5 +162,5 @@ it('shell-escapes the configured binary path in the pgsql import command', funct
 
     $command = app(PostgreSql::class)->getImportCommand('/tmp/backup.sql', 'pgsql-restore');
 
-    expect($command)->toContain(escapeshellarg('/usr/bin/;touch /tmp/lbr_security_test/psql'));
+    expect($command)->toContain(escapeshellarg('/usr/bin/;touch /tmp/lbr_security_test'.DIRECTORY_SEPARATOR.'psql'));
 })->group('pgsql');
