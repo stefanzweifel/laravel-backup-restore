@@ -308,6 +308,18 @@ For MySQL and PostgreSQL the package expects that a `laravel_backup_restore` dat
 
 You can change user, password and database by passing ENV-variables to the shell command tp run the tests … or change the settings locally to your needs. See [TestCase](https://github.com/stefanzweifel/laravel-backup-restore/blob/main/tests/TestCase.php) for details.
 
+For MySQL: `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USERNAME`, `MYSQL_PASSWORD`, `MYSQL_DATABASE`.
+For PostgreSQL: `PGSQL_HOST`, `PGSQL_PORT`, `PGSQL_USERNAME`, `PGSQL_PASSWORD`, `PGSQL_DATABASE`.
+
+The test suite runs on Linux, macOS and Windows.
+
+Restoring a compressed dump shells out to `gzip` or `bunzip2`, and the database
+importers to `mysql`, `psql` or `sqlite3`. Linux and macOS ship these or install
+them with the database client. On Windows, `gzip.exe` and `bunzip2.exe` come
+with Git for Windows but live in a `usr/bin` directory that is not on `PATH` by
+default, and `sqlite3` has to be installed separately. See the `run-tests`
+workflow for how CI sets that up.
+
 ### Testing with Testbench
 
 You can invoke the `backup:restore` command using `testbench` to test the command like you would in a Laravel application. 

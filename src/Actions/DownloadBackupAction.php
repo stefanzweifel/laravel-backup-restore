@@ -18,7 +18,10 @@ class DownloadBackupAction
             Storage::disk($pendingRestore->restoreDisk)
                 ->writeStream(
                     $pendingRestore->getPathToLocalCompressedBackup(),
-                    Storage::disk($pendingRestore->disk)->readStream($pendingRestore->backup)
+                    Storage::disk($pendingRestore->disk)->readStream($pendingRestore->backup),
+                    // The local adapter only chmods a written file when the write
+                    // carries this option. Without it the archive lands at 0644.
+                    ['visibility' => 'private']
                 );
         }, "Downloading {$pendingRestore->backup}");
 

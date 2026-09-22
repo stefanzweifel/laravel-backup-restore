@@ -76,7 +76,7 @@ it('uses custom binary to import compressed pgsql dump', function () {
     app(PostgreSql::class)->importToDatabase($dumpFile, 'pgsql-restore-binary-path');
 
     Process::assertRan(function (PendingProcess $process) {
-        assertStringContainsString('gunzip -c', $process->command);
+        assertStringContainsString('gzip -d -c', $process->command);
         assertStringContainsString('/usr/bin/psql', $process->command);
 
         return true;
@@ -162,5 +162,5 @@ it('shell-escapes the configured binary path in the pgsql import command', funct
 
     $command = app(PostgreSql::class)->getImportCommand('/tmp/backup.sql', 'pgsql-restore');
 
-    expect($command)->toContain(escapeshellarg('/usr/bin/;touch /tmp/lbr_security_test/psql'));
+    expect($command)->toContain(escapeshellarg('/usr/bin/;touch /tmp/lbr_security_test'.DIRECTORY_SEPARATOR.'psql'));
 })->group('pgsql');

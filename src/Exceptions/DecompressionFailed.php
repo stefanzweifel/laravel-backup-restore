@@ -28,6 +28,7 @@ class DecompressionFailed extends Exception implements BackupRestoreException
         public readonly int|false|null $errorCode,
         public readonly ?string $entryName,
         string $message,
+        private readonly ?string $hintText = null,
     ) {
         parent::__construct($message);
     }
@@ -39,6 +40,17 @@ class DecompressionFailed extends Exception implements BackupRestoreException
             errorCode: null,
             entryName: $entryName,
             message: "The ZIP entry \"{$entryName}\" in \"{$archive}\" was rejected as a path traversal attempt.",
+        );
+    }
+
+    public static function entryIsNotEncrypted(string $entryName, string $archive): static
+    {
+        return new static(
+            archive: $archive,
+            errorCode: null,
+            entryName: $entryName,
+            message: "A password was supplied, but the entry \"{$entryName}\" in \"{$archive}\" is not encrypted with AES.",
+            hintText: 'ZIP encryption is per entry. Either the archive is not the encrypted backup you expected, or it was created without encryption — in which case restore it without --password.',
         );
     }
 
@@ -56,6 +68,10 @@ class DecompressionFailed extends Exception implements BackupRestoreException
 
     public function hint(): ?string
     {
+        if ($this->hintText !== null) {
+            return $this->hintText;
+        }
+
         if ($this->entryName !== null) {
             return 'The archive was not created by spatie/laravel-backup or has been tampered with.';
         }

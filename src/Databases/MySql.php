@@ -50,7 +50,7 @@ class MySql extends DbImporter
     private function getMySqlImportCommandForCompressedDump(string $storagePathToDatabaseFile, string $importToDatabase, array $credentials, string $connection): string
     {
         $decompressCommand = match (File::extension($storagePathToDatabaseFile)) {
-            'gz' => 'gunzip < '.escapeshellarg($storagePathToDatabaseFile),
+            'gz' => 'gzip -d -c '.escapeshellarg($storagePathToDatabaseFile),
             'bz2' => 'bunzip2 -c '.escapeshellarg($storagePathToDatabaseFile),
             default => throw ImportFailed::decompressionFailed($storagePathToDatabaseFile, 'Unknown compression format'),
         };

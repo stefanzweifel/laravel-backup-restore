@@ -23,3 +23,17 @@ test('it downloads backup from remote disk and stores it in local storage', func
 
     expect(Storage::disk('local')->exists($pendingRestore->getPathToLocalCompressedBackup()))->toBeTrue();
 });
+
+test('it stores the downloaded backup so that only the owner can read it', function () {
+    $pendingRestore = PendingRestore::make(
+        disk: 'remote',
+        backup: 'Laravel/2023-01-28-mysql-no-compression-no-encryption.zip',
+        connection: 'mysql',
+    );
+
+    app(DownloadBackupAction::class)->execute($pendingRestore);
+
+    $path = Storage::disk('local')->path($pendingRestore->getPathToLocalCompressedBackup());
+
+    expect(substr(sprintf('%o', fileperms($path)), -4))->toBe('0600');
+})->skipOnWindows();
