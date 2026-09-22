@@ -89,6 +89,8 @@ Password used to decrypt a possible encrypted backup. Defaults to encryption pas
 #### `--reset`
 Reset the database before restoring the backup. Defaults to `false`.
 
+Dropping the tables cannot be undone, so the command checks the database dumps in the backup first. If a dump is empty, or holds no `CREATE TABLE`, `INSERT INTO` or `COPY ... FROM stdin` statement, the restore stops before any table is dropped. Dumps larger than 1 MB and dumps in a format that cannot be read as text (a binary `pg_dump`, for example) are not checked.
+
 #### `--keep`
 Keeps the downloaded backup (and the decrypted backup folder) in existence. You need to delete it by hand. Useful for extracting and restoring backuped files. Defaults to `false`.
 
@@ -151,6 +153,46 @@ Add your health check to the `health-checks`-array in the `config/laravel-backup
         \App\HealthChecks\MyCustomHealthCheck::class,
     ],
 ```
+
+### Exit Codes
+
+| Code | Meaning |
+|---|---|
+| `0` | The backup was restored and all health checks passed. |
+| `1` | The restore failed, or a health check failed after the import. |
+| `2` | The restore was not confirmed at the prompt. |
+
+### Handling Failures
+
+Every exception the package throws implements `Wnx\LaravelBackupRestore\Exceptions\BackupRestoreException`, so one catch block covers all of them.
+
+```php
+use Wnx\LaravelBackupRestore\Exceptions\BackupRestoreException;
+
+try {
+    Artisan::call('backup:restore', ['--disk' => 's3', '--backup' => 'latest']);
+} catch (BackupRestoreException $e) {
+    report($e->getMessage());
+    report($e->hint());
+}
+```
+
+`getMessage()` is a single line naming what went wrong. `hint()` returns the next step to take, or `null`.
+
+Each exception also carries the relevant facts as readonly properties, so you do not have to parse the message:
+
+| Exception | Thrown when | Properties |
+|---|---|---|
+| `NoBackupsFound` | The disk holds no `.zip` files | `disk`, `backupName` |
+| `DecompressionFailed` | The archive cannot be opened or extracted | `archive`, `errorCode`, `entryName` |
+| `NoDatabaseDumpsFound` | The archive has no `db-dumps` to import | `backup`, `filesInBackup` |
+| `DumpIsNotRestorable` | A dump is empty or holds no statements | `dumpFile`, `reason` |
+| `CannotCreateDbImporter` | The connection is missing or its driver is unsupported | `connectionName`, `driver` |
+| `CliNotFound` | The database binary is not on the `PATH` | `cli` |
+| `ImportFailed` | The import command exited non-zero | `exitCode`, `output`, `errorOutput`, `dumpFile` |
+| `InvalidHealthCheck` | A configured health check is not a `HealthCheck` | `healthCheck`, `configKey` |
+
+`ImportFailed` keeps the last 4 KB of each captured stream. The `backup:restore`-command prints the message and the hint; run it with `-v` to also get the exception class, the stack trace and the full captured stderr.
 
 ## Limitations
 
