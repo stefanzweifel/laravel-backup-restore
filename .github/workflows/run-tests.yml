@@ -74,7 +74,12 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo
+          # pdo_mysql and pdo_pgsql have to be listed explicitly. The Linux PHP
+          # packages enable both by default, so the list got away with omitting
+          # them until Windows joined the matrix, where setup-php enables only
+          # what it is asked for and every database test died with
+          # "could not find driver".
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, pdo_mysql, pdo_pgsql, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo
           ini-values: pcov.directory=src
           coverage: pcov
 
