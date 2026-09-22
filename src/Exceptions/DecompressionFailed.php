@@ -27,6 +27,14 @@ class DecompressionFailed extends Exception
         return new static("ZIP entry \"{$entryName}\" in \"{$archive}\" was rejected due to a path traversal attempt.");
     }
 
+    public static function entryIsNotEncrypted(string $entryName, string $archive): static
+    {
+        return new static(
+            "A password was supplied, but the entry \"{$entryName}\" in \"{$archive}\" is not encrypted with AES. ".
+            'The archive is not the encrypted backup it is expected to be.'
+        );
+    }
+
     public static function create($errorCode, $filename): static
     {
         return new static(str_replace(
