@@ -85,7 +85,7 @@ it('uses custom binary path to import compressed mysql dump', function () {
     );
 
     Process::assertRan(function (PendingProcess $process) {
-        assertStringContainsString('gunzip <', $process->command);
+        assertStringContainsString('gzip -d -c', $process->command);
         assertStringContainsString('/usr/bin/mysql', $process->command);
 
         return true;

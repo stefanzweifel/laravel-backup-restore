@@ -22,7 +22,7 @@ class CheckDependenciesAction
 
         $this->checkIfCliExists($databaseCli);
 
-        $this->checkIfCliExists('gunzip');
+        $this->checkIfCliExists('gzip');
     }
 
     /**

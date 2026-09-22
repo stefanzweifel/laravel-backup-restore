@@ -42,5 +42,5 @@ it('looks up CLI dependencies with the lookup command of the current platform', 
     $lookup = windows_os() ? 'where' : 'which';
 
     Process::assertRan(fn (PendingProcess $process) => $process->command === [$lookup, 'mysql']);
-    Process::assertRan(fn (PendingProcess $process) => $process->command === [$lookup, 'gunzip']);
+    Process::assertRan(fn (PendingProcess $process) => $process->command === [$lookup, 'gzip']);
 });

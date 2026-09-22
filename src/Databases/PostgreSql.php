@@ -51,7 +51,7 @@ class PostgreSql extends DbImporter
 
         // @todo: Improve detection of compressed files
         $decompressCommand = match (File::extension($dumpFile)) {
-            'gz' => 'gunzip -c '.escapeshellarg($dumpFile),
+            'gz' => 'gzip -d -c '.escapeshellarg($dumpFile),
             'bz2' => 'bunzip2 -c '.escapeshellarg($dumpFile),
             default => throw ImportFailed::decompressionFailed($dumpFile, 'Unknown compression format'),
         };

@@ -76,7 +76,7 @@ it('uses custom binary to import compressed pgsql dump', function () {
     app(PostgreSql::class)->importToDatabase($dumpFile, 'pgsql-restore-binary-path');
 
     Process::assertRan(function (PendingProcess $process) {
-        assertStringContainsString('gunzip -c', $process->command);
+        assertStringContainsString('gzip -d -c', $process->command);
         assertStringContainsString('/usr/bin/psql', $process->command);
 
         return true;
