@@ -17,3 +17,8 @@
 /UPGRADING.md       export-ignore
 /phpstan.neon.dist  export-ignore
 /phpstan-baseline.neon  export-ignore
+
+# Test fixtures are compared byte for byte against their compressed
+# counterparts. Git for Windows would otherwise check the .sql files out with
+# CRLF endings while the .gz and .bz2 archives stay as they are.
+/tests/storage/** -text
