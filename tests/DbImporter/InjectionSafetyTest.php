@@ -60,8 +60,9 @@ it('keeps every hostile value as one argument in the pgsql command', function (s
     expectSingleArgument($command, 'host'.$payload);
     expectSingleArgument($command, '--option='.$payload);
 
-    // The binary path is the first element and nothing else.
-    expect($command[0])->toBe('/usr/bin/path'.$payload.'/psql');
+    // The binary path is the first element and nothing else. The separator is
+    // the platform's, because a configured path on Windows uses backslashes.
+    expect($command[0])->toBe('/usr/bin/path'.$payload.DIRECTORY_SEPARATOR.'psql');
 })->with([SHELL_PAYLOAD, SHELL_PAYLOAD_SUBSTITUTION]);
 
 it('keeps every hostile value as one argument in the mysql command', function (string $payload) {
@@ -77,7 +78,7 @@ it('keeps every hostile value as one argument in the mysql command', function (s
     expect($command)->toBeArray();
     expectSingleArgument($command, 'db'.$payload);
     expectSingleArgument($command, '--option='.$payload);
-    expect($command[0])->toBe('/usr/bin/path'.$payload.'/mysql');
+    expect($command[0])->toBe('/usr/bin/path'.$payload.DIRECTORY_SEPARATOR.'mysql');
 
     // The user name and host go into the credentials file, not into argv.
     $credentials = $importer->getContentsOfCredentialsFile();
@@ -129,12 +130,15 @@ it('does not run a shell when a mysql import with hostile values fails', functio
 it('does not run a shell when a sqlite database path carries a payload', function (string $payload) {
     // The payload contains slashes, so the path names directories that do not
     // exist. PDO reports that as an open failure, which is what using the value
-    // as a literal path looks like.
+    // as a literal path looks like. The wording of that failure differs between
+    // platforms, so only the failure itself is asserted.
     $database = sys_get_temp_dir().'/lbr-injection-'.$payload.'.sqlite';
 
     expect(fn () => Sqlite::create()->setDbName($database)->importFromFile(
         lbrFixture('2023-02-28-sqlite-no-compression-no-encryption.sql')
-    ))->toThrow(ImportFailed::class, 'unable to open database file');
+    ))->toThrow(ImportFailed::class);
+
+    expect(file_exists($database))->toBeFalse();
 
     foreach (payloadFiles() as $file) {
         expect(file_exists($file))->toBeFalse();
@@ -144,6 +148,8 @@ it('does not run a shell when a sqlite database path carries a payload', functio
 it('imports into a sqlite database whose path carries shell characters', function () {
     // Same characters, minus the slashes, so the file can actually be created.
     $database = sys_get_temp_dir().'/lbr-injection-'.str_replace('/', '_', SHELL_PAYLOAD).'.sqlite';
+
+    $connection = null;
 
     try {
         Sqlite::create()->setDbName($database)->importFromFile(
@@ -155,6 +161,9 @@ it('imports into a sqlite database whose path carries shell characters', functio
         $connection = new PDO('sqlite:'.$database);
         expect((int) $connection->query('select count(*) from users')->fetchColumn())->toBe(10);
     } finally {
+        // Windows refuses to unlink a file that is still open.
+        $connection = null;
+
         if (file_exists($database)) {
             unlink($database);
         }
