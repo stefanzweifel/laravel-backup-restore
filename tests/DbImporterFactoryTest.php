@@ -16,12 +16,6 @@ use Wnx\LaravelBackupRestore\Events\DatabaseDumpImportWasSuccessful;
 use Wnx\LaravelBackupRestore\Exceptions\CannotCreateDbImporter;
 use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 
-// extend() writes to a static registry, which would otherwise leak between
-// tests and make the order they run in matter.
-beforeEach(function () {
-    (new ReflectionClass(DbImporterFactory::class))->setStaticPropertyValue('custom', []);
-});
-
 it('returns db importer instances for given database driver', function ($connectionName, $expected) {
     expect(DbImporterFactory::createFromConnection($connectionName))->toBeInstanceOf($expected);
 })->with([

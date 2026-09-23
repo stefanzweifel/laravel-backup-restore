@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Storage;
 use Wnx\LaravelBackupRestore\DbImporter\Databases\MySql;
 use Wnx\LaravelBackupRestore\DbImporter\Databases\PostgreSql;
 use Wnx\LaravelBackupRestore\DbImporter\Databases\Sqlite;
+use Wnx\LaravelBackupRestore\DbImporterFactory;
 use Wnx\LaravelBackupRestore\PendingRestore;
 use Wnx\LaravelBackupRestore\Tests\TestCase;
 
@@ -47,6 +48,10 @@ function sqliteImporter(string $connection = 'sqlite'): Sqlite
 
 uses(TestCase::class)
     ->beforeEach(function () {
+        // extend() writes to a static registry that survives the application,
+        // so a driver one test registers is still there for the next one.
+        (new ReflectionClass(DbImporterFactory::class))->setStaticPropertyValue('custom', []);
+
         // Delete all files in the temp directory
         Storage::disk('local')->deleteDirectory('backup-restore-temp');
 
