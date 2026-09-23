@@ -70,6 +70,16 @@ jobs:
           password: password
           database: laravel_backup_restore
 
+      # The committed pgsql fixtures were dumped by the `postgres` superuser and
+      # carry `ALTER TABLE ... OWNER TO postgres`. psql now runs with
+      # ON_ERROR_STOP=1, so a missing role aborts the import. A normal
+      # PostgreSQL installation has this role; the action only creates `root`.
+      - name: Create the postgres role
+        run: psql -h 127.0.0.1 -U root -d laravel_backup_restore -c "CREATE ROLE postgres LOGIN SUPERUSER"
+        env:
+          PGPASSWORD: password
+        shell: bash
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
