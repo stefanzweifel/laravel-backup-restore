@@ -60,6 +60,27 @@ SQLite it returns an empty string, because SQLite runs no command.
 Use `DbImporterFactory::importerForConnection($connection)` to get the importer that actually runs,
 and `getImportCommand(): array` on it.
 
+### `import_binary_path` replaces `dump.dump_binary_path`
+
+The path to the database clients moved into this package's own config:
+
+```php
+// config/backup-restore.php
+'import_binary_path' => '/opt/homebrew/opt/mysql-client/bin',
+
+// or one per connection
+'import_binary_path' => [
+    'mysql' => '/opt/homebrew/opt/mysql-client/bin',
+    'pgsql' => '/Applications/Postgres.app/Contents/Versions/17/bin',
+],
+```
+
+Until now the only way to point this package at a client was
+`database.connections.*.dump.dump_binary_path`, which belongs to `spatie/laravel-backup` and means
+the path to the *dump* binaries (`mysqldump`, `pg_dump`) rather than the import ones. That key is
+still read when `import_binary_path` is empty, so nothing breaks, but it is deprecated and will
+stop being read in the next major version.
+
 ### `CheckDependenciesAction` checks different binaries
 
 It no longer checks for `gunzip`. It checks nothing at all for a SQLite connection, because
