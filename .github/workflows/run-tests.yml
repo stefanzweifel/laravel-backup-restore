@@ -79,7 +79,10 @@ jobs:
           # them until Windows joined the matrix, where setup-php enables only
           # what it is asked for and every database test died with
           # "could not find driver".
-          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, pdo_mysql, pdo_pgsql, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo
+          # bz2 decompresses bzip2 dumps in PHP. The Linux and macOS builds have
+          # it on by default; the Windows build does not, and every bz2 fixture
+          # failed with "ext-bz2 is not loaded".
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, pdo_mysql, pdo_pgsql, bz2, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo
           ini-values: pcov.directory=src
           coverage: pcov
 
