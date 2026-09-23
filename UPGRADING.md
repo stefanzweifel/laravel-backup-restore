@@ -60,6 +60,17 @@ SQLite it returns an empty string, because SQLite runs no command.
 Use `DbImporterFactory::importerForConnection($connection)` to get the importer that actually runs,
 and `getImportCommand(): array` on it.
 
+### The database client is checked before the backup is downloaded
+
+`backup:restore` looks for the database client it will need before it downloads anything, and
+stops with a `CliNotFound` if it is missing. `CheckDependenciesAction` has been in the package for
+a long time but was never called; it is now wired into `RestoreCommand`.
+
+A restore that used to download a backup, extract it and then fail on a missing `mysql` or `psql`
+now fails immediately instead. If the clients are somewhere other than the `PATH` of the PHP
+process, set `import_binary_path` (see below). SQLite connections are not checked, because they
+are imported through PDO.
+
 ### `import_binary_path` replaces `dump.dump_binary_path`
 
 The path to the database clients moved into this package's own config:
@@ -86,15 +97,15 @@ stop being read in the next major version.
 It no longer checks for `gunzip`. It checks nothing at all for a SQLite connection, because
 SQLite imports through PDO, and `Databases\Sqlite::getCliName()` returns an empty string for the
 same reason — it used to return `'gunzip'`. For MySQL, MariaDB and PostgreSQL it checks the binary
-at the connection's `dump.dump_binary_path`, which is the path the importer actually calls,
-rather than the bare name on `PATH`.
+at the configured `import_binary_path`, which is the path the importer actually calls, rather than
+the bare name on `PATH`.
 
-The action is still not called: `RestoreCommand::handle()` has the call commented out, as it was
-before. `dump.dump_binary_path` is `spatie/laravel-backup`'s path to the *dump* binaries rather
-than the import ones, so turning the check on would make a slightly wrong path a hard failure
-before the restore even starts. A custom-format PostgreSQL dump also runs `pg_restore` instead of
-`psql`, and which of the two it will be is only known once the dump is on disk and its magic
-number has been read.
+A PostgreSQL connection is checked for `pg_restore` as well as `psql`. A custom-format dump is
+restored with `pg_restore`, and which of the two it will be is only known once the dump has been
+downloaded — after the check has run — so both have to be present.
+
+A configured path is checked against the filesystem rather than looked up with `which` or `where`,
+which only search the `PATH` the binary is not on.
 
 ### A `mariadb` connection now works
 

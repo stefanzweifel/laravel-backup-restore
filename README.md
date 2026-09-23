@@ -81,6 +81,17 @@ return [
 ];
 ```
 
+### Database clients
+
+Restoring a MySQL, MariaDB or PostgreSQL backup runs that database's client:
+`mysql`, `mariadb`, or `psql` and `pg_restore`. They have to be installed on the
+machine running the restore. SQLite needs nothing — it is imported through PDO.
+
+The command looks for them before it downloads anything, so a missing client
+fails in a second rather than after a long download. If they are not on the
+`PATH` of the PHP process, point `import_binary_path` at the directory holding
+them.
+
 ## Security
 
 Restoring a backup from a disk you do not fully control is close to running a shell script from
@@ -245,7 +256,7 @@ Each exception also carries the relevant facts as readonly properties, so you do
 | `NoDatabaseDumpsFound` | The archive has no `db-dumps` to import | `backup`, `filesInBackup` |
 | `DumpIsNotRestorable` | A dump is empty or holds no statements | `dumpFile`, `reason` |
 | `CannotCreateDbImporter` | The connection is missing or its driver is unsupported | `connectionName`, `driver` |
-| `CliNotFound` | The database binary is not on the `PATH` | `cli` |
+| `CliNotFound` | The database client was not found before the restore started | `cli` |
 | `ImportFailed` | The import command exited non-zero | `exitCode`, `output`, `errorOutput`, `dumpFile` |
 | `InvalidHealthCheck` | A configured health check is not a `HealthCheck` | `healthCheck`, `configKey` |
 
