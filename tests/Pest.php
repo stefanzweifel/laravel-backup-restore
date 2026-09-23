@@ -3,13 +3,55 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Storage;
+use Wnx\LaravelBackupRestore\DbImporter\Databases\MySql;
+use Wnx\LaravelBackupRestore\DbImporter\Databases\PostgreSql;
+use Wnx\LaravelBackupRestore\DbImporter\Databases\Sqlite;
+use Wnx\LaravelBackupRestore\DbImporterFactory;
 use Wnx\LaravelBackupRestore\PendingRestore;
 use Wnx\LaravelBackupRestore\Tests\TestCase;
 
 use function Pest\Laravel\artisan;
 
+function lbrFixture(string $name): string
+{
+    return __DIR__.'/storage/Laravel/'.$name;
+}
+
+function mysqlImporter(string $connection = 'mysql-restore'): MySql
+{
+    $config = config("database.connections.{$connection}");
+
+    return MySql::create()
+        ->setDbName($config['database'])
+        ->setUserName($config['username'])
+        ->setPassword((string) $config['password'])
+        ->setHost($config['host'])
+        ->setPort((int) $config['port']);
+}
+
+function pgsqlImporter(string $connection = 'pgsql'): PostgreSql
+{
+    $config = config("database.connections.{$connection}");
+
+    return PostgreSql::create()
+        ->setDbName($config['database'])
+        ->setUserName($config['username'])
+        ->setPassword((string) $config['password'])
+        ->setHost($config['host'])
+        ->setPort((int) $config['port']);
+}
+
+function sqliteImporter(string $connection = 'sqlite'): Sqlite
+{
+    return Sqlite::create()->setDbName(config("database.connections.{$connection}.database"));
+}
+
 uses(TestCase::class)
     ->beforeEach(function () {
+        // extend() writes to a static registry that survives the application,
+        // so a driver one test registers is still there for the next one.
+        (new ReflectionClass(DbImporterFactory::class))->setStaticPropertyValue('custom', []);
+
         // Delete all files in the temp directory
         Storage::disk('local')->deleteDirectory('backup-restore-temp');
 

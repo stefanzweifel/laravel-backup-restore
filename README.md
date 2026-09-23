@@ -9,6 +9,11 @@ A package to restore a database backup created by the [spatie/laravel-backup](ht
 
 The package requires Laravel v12 or higher and PHP 8.4 or higher.
 
+MySQL and MariaDB restores need the `mysql` or `mariadb` client on the machine running the command,
+PostgreSQL restores need `psql` and `pg_restore`. SQLite restores need neither: they go through
+PDO. Compressed dumps are decompressed in PHP, so `gunzip` and `bunzip2` are not needed
+(`ext-zlib` is required, `ext-bz2` for bzip2 dumps).
+
 ## Installation
 
 You can install the package via composer:
@@ -39,8 +44,36 @@ return [
     'health-checks' => [
         \Wnx\LaravelBackupRestore\HealthChecks\Checks\DatabaseHasTables::class,
     ],
+
+    /**
+     * psql executes backslash meta-commands it reads from a dump, and `\!` runs
+     * a shell command. Dumps are therefore scanned and refused if they contain
+     * a meta-command that pg_dump does not itself emit.
+     *
+     * Set this to true to hand meta-commands to psql anyway. Only do that for
+     * dumps you trust.
+     */
+    'allow_psql_meta_commands' => false,
 ];
 ```
+
+## Security
+
+Restoring a backup from a disk you do not fully control is close to running a shell script from
+that disk. A database dump is a script the database client executes, and the clients do more than
+run SQL:
+
+- `psql` runs a line starting with `\!` as a shell command, whether or not stdin is a terminal.
+  There is no flag that turns that off. This package scans a plain-SQL PostgreSQL dump before
+  handing it to `psql` and refuses any meta-command that `pg_dump` does not itself emit. The
+  `allow_psql_meta_commands` config option turns the scan off for a dump you trust.
+- `sqlite3` does the same for `.shell` and `.system`. This package imports SQLite dumps through
+  PDO, which has no such commands.
+- The `mysql` client rejects `system` and `\!` from redirected stdin, so MySQL and MariaDB need
+  nothing extra.
+
+Dumps also contain ordinary SQL, which can drop tables, create users and read files the database
+server can read. Restore only from a disk you trust.
 
 ## Usage
 
@@ -313,12 +346,11 @@ For PostgreSQL: `PGSQL_HOST`, `PGSQL_PORT`, `PGSQL_USERNAME`, `PGSQL_PASSWORD`, 
 
 The test suite runs on Linux, macOS and Windows.
 
-Restoring a compressed dump shells out to `gzip` or `bunzip2`, and the database
-importers to `mysql`, `psql` or `sqlite3`. Linux and macOS ship these or install
-them with the database client. On Windows, `gzip.exe` and `bunzip2.exe` come
-with Git for Windows but live in a `usr/bin` directory that is not on `PATH` by
-default, and `sqlite3` has to be installed separately. See the `run-tests`
-workflow for how CI sets that up.
+The MySQL and PostgreSQL tests need the `mysql` and `psql` clients on `PATH`.
+Linux and macOS install both with the database itself; on Windows they come with
+the MySQL and PostgreSQL installers. The SQLite tests and every compressed
+fixture run without an external binary. See the `run-tests` workflow for how CI
+sets this up.
 
 ### Testing with Testbench
 
