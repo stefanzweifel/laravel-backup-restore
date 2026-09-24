@@ -12,7 +12,9 @@ use Wnx\LaravelBackupRestore\DbImporter\Compressors\CompressorFactory;
 use Wnx\LaravelBackupRestore\DbImporter\Exceptions\CannotSetParameter;
 use Wnx\LaravelBackupRestore\DbImporter\Exceptions\CannotStartImport;
 use Wnx\LaravelBackupRestore\DbImporter\Exceptions\DumpContainsMetaCommand;
+use Wnx\LaravelBackupRestore\DbImporter\Exceptions\ImportAborted;
 use Wnx\LaravelBackupRestore\DbImporter\Exceptions\ImportFailed;
+use Wnx\LaravelBackupRestore\RestoreAbort;
 
 /**
  * Imports a database dump.
@@ -53,6 +55,11 @@ abstract class DbImporter
      * @var list<string>
      */
     protected array $temporaryFiles = [];
+
+    /**
+     * Set when the caller wants to be able to interrupt the import.
+     */
+    protected ?RestoreAbort $abort = null;
 
     public static function create(): static
     {
@@ -96,11 +103,22 @@ abstract class DbImporter
     protected function prepareImport(string $dumpFile): void {}
 
     /**
-     * @throws ImportFailed|CannotStartImport
+     * @throws ImportFailed|CannotStartImport|ImportAborted
      */
     protected function runImport(string $dumpFile): void
     {
         $input = $this->getProcessInput($dumpFile);
+
+        // Do not start a child process for an import that is already cancelled. This
+        // also means a stopper is only ever registered while a process can still be
+        // signalled.
+        if ($this->abort?->wasRequested()) {
+            if (is_resource($input)) {
+                fclose($input);
+            }
+
+            throw ImportAborted::bySignal($this->abort->signal() ?? 0);
+        }
 
         $process = new Process(
             command: $this->getImportCommand(),
@@ -109,6 +127,17 @@ abstract class DbImporter
         );
 
         $process->setInput($input);
+
+        // Signalling rather than Process::stop(): this runs inside a signal handler
+        // that interrupted Process::wait(), and stop() closes the pipes and the process
+        // handle the interrupted wait loop is still holding. The child exits, run()
+        // returns as it would for any other non-zero exit, and the abort is reported by
+        // the caller that owns the token.
+        $releaseStopper = $this->abort?->whileRunning(function () use ($process): void {
+            if ($process->isRunning() && defined('SIGTERM')) {
+                $process->signal((int) constant('SIGTERM'));
+            }
+        }) ?? static function (): void {};
 
         try {
             $process->run();
@@ -131,6 +160,8 @@ abstract class DbImporter
 
             throw $throwable;
         } finally {
+            $releaseStopper();
+
             if (is_resource($input)) {
                 fclose($input);
             }
@@ -271,6 +302,18 @@ abstract class DbImporter
         foreach ($extraOptions as $extraOption) {
             $this->addExtraOption($extraOption);
         }
+
+        return $this;
+    }
+
+    /**
+     * Lets the caller stop this import part-way through. Carried as a property
+     * rather than a parameter on importFromFile() or runImport(), because both are
+     * overridden by subclasses outside this package.
+     */
+    public function abortWith(?RestoreAbort $abort): static
+    {
+        $this->abort = $abort;
 
         return $this;
     }
