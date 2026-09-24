@@ -8,6 +8,7 @@ use PDO;
 use PDOException;
 use Wnx\LaravelBackupRestore\DbImporter\DbImporter;
 use Wnx\LaravelBackupRestore\DbImporter\Exceptions\ImportFailed;
+use Wnx\LaravelBackupRestore\DbImporter\Support\SqliteStatementReader;
 
 /**
  * Imports through PDO instead of the `sqlite3` binary. Besides dropping the
@@ -15,9 +16,8 @@ use Wnx\LaravelBackupRestore\DbImporter\Exceptions\ImportFailed;
  * `.system` lines it reads from stdin, so a dump file could execute shell
  * commands. PDO has no dot-commands and treats such a line as a syntax error.
  *
- * The dump is read into memory in one piece, which is fine for the SQLite
- * dumps this package deals with. A dump of a few hundred megabytes would need
- * a chunked reader instead.
+ * The dump is read in chunks and executed one statement at a time, so peak
+ * memory follows the widest single statement rather than the size of the file.
  */
 class Sqlite extends DbImporter
 {
@@ -43,28 +43,30 @@ class Sqlite extends DbImporter
 
     protected function runImport(string $dumpFile): void
     {
-        $stream = $this->openDumpStream($dumpFile);
-
-        try {
-            $dump = stream_get_contents($stream);
-        } finally {
-            if (is_resource($stream)) {
-                fclose($stream);
-            }
-        }
-
-        if ($dump === false) {
-            throw ImportFailed::statementFailed("Could not read the dump file `{$dumpFile}`.");
-        }
-
         try {
             $connection = new PDO('sqlite:'.$this->dbName, options: [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             ]);
-
-            $connection->exec($dump);
         } catch (PDOException $exception) {
             throw ImportFailed::statementFailed($exception->getMessage());
+        }
+
+        $statements = (new SqliteStatementReader)->pipe($this->openDumpStream($dumpFile));
+        $number = 0;
+
+        // The dump carries its own BEGIN TRANSACTION and COMMIT, and the
+        // statements run in the order it writes them. Opening a transaction
+        // around the loop instead would leave the PRAGMA lines that come
+        // before it without effect, because SQLite ignores PRAGMA
+        // foreign_keys once a transaction is open.
+        foreach ($statements as $statement) {
+            $number++;
+
+            try {
+                $connection->exec($statement);
+            } catch (PDOException $exception) {
+                throw ImportFailed::statementInDumpFailed($number, $statement, $exception->getMessage());
+            }
         }
     }
 }
