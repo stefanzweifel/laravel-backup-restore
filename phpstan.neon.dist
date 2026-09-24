@@ -1,6 +1,3 @@
-includes:
-    - ./phpstan-baseline.neon
-
 parameters:
     # This package ships its own config file, which is not the "config"
     # directory larastan assumes when it looks for env() calls.
