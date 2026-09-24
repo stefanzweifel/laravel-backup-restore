@@ -151,7 +151,14 @@ abstract class DbImporter
 
                 $signal = (int) constant('SIGTERM');
 
-                if ($pid !== null && function_exists('posix_kill')) {
+                // No pid means there is nothing to signal. Asking Symfony for one
+                // from in here is not an option: getPid() is on the re-entrant path
+                // described above.
+                if ($pid === null) {
+                    return;
+                }
+
+                if (function_exists('posix_kill')) {
                     posix_kill($pid, $signal);
 
                     return;
@@ -170,19 +177,29 @@ abstract class DbImporter
 
             throw ImportFailed::timedOut($this->timeout);
         } catch (SymfonyProcessException $exception) {
+            // Whether the child ever ran decides which of the three this is.
+            // ProcessStartFailedException and ProcessSignaledException share this
+            // catch, so the token alone would report an abort for a signal that
+            // arrived while start() was failing for an unrelated reason.
+            $processStarted = $process->isStarted();
+
+            $process->stop(0);
+
             // A child killed by the stopper comes back here too: Symfony reports
             // a signalled child that it did not signal itself as a RuntimeException.
-            if ($this->abort?->wasRequested()) {
-                $process->stop(0);
-
+            if ($processStarted && $this->abort?->wasRequested()) {
                 throw ImportAborted::bySignal($this->abort->signal() ?? 0);
+            }
+
+            if ($processStarted) {
+                // The child ran and was then killed by something else — an
+                // out-of-memory killer, or a `kill` against the client.
+                throw ImportFailed::processWasKilled($process, $exception->getMessage());
             }
 
             // proc_open refused to start the process at all. The usual cause is
             // a binary that is not on PATH, which is how a missing client
             // surfaces on Windows; on Linux it comes back as exit code 127.
-            $process->stop(0);
-
             throw CannotStartImport::binaryCouldNotBeStarted(
                 $this->importBinaryPath.$this->getBinaryName(),
                 $exception->getMessage(),
