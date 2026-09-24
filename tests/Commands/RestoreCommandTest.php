@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Console\Signals;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
@@ -571,4 +572,25 @@ it('removes the temporary files when a health check fails after a completed impo
     // The import finished, so the database is not partial and the extracted
     // dump is not the only copy of anything.
     expect(Storage::disk('local')->allFiles('backup-restore-temp'))->toBeEmpty();
+})->group('sqlite');
+
+it('restores normally when ext-pcntl is unavailable', function () {
+    // Laravel resolves signal availability through this hook, so the command can
+    // be exercised as it behaves on a build without the extension.
+    Signals::resolveAvailabilityUsing(fn () => false);
+
+    try {
+        $this->artisan(RestoreCommand::class, [
+            '--disk' => 'remote',
+            '--backup' => LBR_SQLITE_BACKUP,
+            '--connection' => 'sqlite-restore',
+            '--no-interaction' => true,
+        ])
+            ->expectsQuestion(lbrConfirmation(), true)
+            ->assertSuccessful();
+
+        expect(DB::connection('sqlite')->table('users')->count())->toBe(10);
+    } finally {
+        Signals::resolveAvailabilityUsing(null);
+    }
 })->group('sqlite');
