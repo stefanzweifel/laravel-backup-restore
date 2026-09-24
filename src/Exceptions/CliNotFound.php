@@ -17,7 +17,7 @@ class CliNotFound extends Exception implements BackupRestoreException
 
     public static function create(string $cli): self
     {
-        return new static(
+        return new self(
             cli: $cli,
             message: "The \"{$cli}\" binary was not found.",
         );

@@ -33,9 +33,9 @@ class DecompressionFailed extends Exception implements BackupRestoreException
         parent::__construct($message);
     }
 
-    public static function pathTraversalDetected(string $entryName, string $archive): static
+    public static function pathTraversalDetected(string $entryName, string $archive): self
     {
-        return new static(
+        return new self(
             archive: $archive,
             errorCode: null,
             entryName: $entryName,
@@ -43,9 +43,9 @@ class DecompressionFailed extends Exception implements BackupRestoreException
         );
     }
 
-    public static function entryIsNotEncrypted(string $entryName, string $archive): static
+    public static function entryIsNotEncrypted(string $entryName, string $archive): self
     {
-        return new static(
+        return new self(
             archive: $archive,
             errorCode: null,
             entryName: $entryName,
@@ -54,11 +54,11 @@ class DecompressionFailed extends Exception implements BackupRestoreException
         );
     }
 
-    public static function create(int|bool $errorCode, string $filename): static
+    public static function create(int|bool $errorCode, string $filename): self
     {
         $reason = self::$errorCodeToMessage[$errorCode] ?? 'Unknown error.';
 
-        return new static(
+        return new self(
             archive: $filename,
             errorCode: $errorCode === true ? null : $errorCode,
             entryName: null,
