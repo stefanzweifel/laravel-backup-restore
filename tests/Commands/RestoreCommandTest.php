@@ -538,3 +538,33 @@ it('still exits with 1 when the restore failed rather than being aborted', funct
         ->expectsQuestion(lbrConfirmation(), true)
         ->assertExitCode(1);
 })->group('sqlite');
+
+it('removes the temporary files after a successful restore', function () {
+    $this->artisan(RestoreCommand::class, [
+        '--disk' => 'remote',
+        '--backup' => LBR_SQLITE_BACKUP,
+        '--connection' => 'sqlite-restore',
+        '--no-interaction' => true,
+    ])
+        ->expectsQuestion(lbrConfirmation(), true)
+        ->assertSuccessful();
+
+    expect(Storage::disk('local')->allFiles('backup-restore-temp'))->toBeEmpty();
+})->group('sqlite');
+
+it('removes the temporary files when a health check fails after a completed import', function () {
+    config(['backup-restore.health-checks' => [FailsWithoutMessage::class]]);
+
+    $this->artisan(RestoreCommand::class, [
+        '--disk' => 'remote',
+        '--backup' => LBR_SQLITE_BACKUP,
+        '--connection' => 'sqlite-restore',
+        '--no-interaction' => true,
+    ])
+        ->expectsQuestion(lbrConfirmation(), true)
+        ->assertExitCode(1);
+
+    // The import finished, so the database is not partial and the extracted
+    // dump is not the only copy of anything.
+    expect(Storage::disk('local')->allFiles('backup-restore-temp'))->toBeEmpty();
+})->group('sqlite');

@@ -82,10 +82,12 @@ class RestoreCommand extends Command
         // finally block only cleans up files this run actually created.
         $startedRestore = null;
 
-        // Past the point where the database is being changed an abort or a
-        // failure keeps the local files: they are the only copy of what is
-        // going in.
+        // Together these two decide the cleanup: the local files are kept only
+        // when the database was being changed and the import did not finish, so
+        // the extracted dump is the only copy of what was going in. A completed
+        // import — health checks passing or not — cleans up as it always did.
         $databaseWasTouched = false;
+        $importCompleted = false;
 
         try {
             $connectionOption = $this->option('connection')
@@ -138,6 +140,8 @@ class RestoreCommand extends Command
 
             $importDumpAction->execute($pendingRestore, $abort);
 
+            $importCompleted = true;
+
             return $this->runHealthChecks($pendingRestore);
         } catch (RestoreWasAborted $exception) {
             // The exception carries what the throwing layer knew. The command knows
@@ -152,7 +156,7 @@ class RestoreCommand extends Command
         } catch (BackupRestoreException $exception) {
             return $this->renderFailure($exception);
         } finally {
-            if ($startedRestore !== null && ! $this->option('keep') && ! $databaseWasTouched) {
+            if ($startedRestore !== null && ! $this->option('keep') && (! $databaseWasTouched || $importCompleted)) {
                 info('Cleaning up …');
                 $cleanupLocalBackupAction->execute($startedRestore);
             }
