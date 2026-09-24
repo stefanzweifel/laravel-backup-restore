@@ -47,7 +47,11 @@ abstract class DbImporter
 
     protected ?Compressor $compressor = null;
 
-    /** Files created for the duration of one import. */
+    /**
+     * Files created for the duration of one import.
+     *
+     * @var list<string>
+     */
     protected array $temporaryFiles = [];
 
     public static function create(): static

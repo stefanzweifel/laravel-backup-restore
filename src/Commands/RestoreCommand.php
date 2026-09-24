@@ -236,15 +236,20 @@ class RestoreCommand extends Command
      */
     private function runHealthChecks(PendingRestore $pendingRestore): int
     {
-        $failedResults = collect(config('backup-restore.health-checks'))
-            ->each(function ($check) {
-                if (! is_string($check) || ! is_a($check, HealthCheck::class, true)) {
-                    throw InvalidHealthCheck::notAHealthCheck(is_string($check) ? $check : get_debug_type($check));
-                }
-            })
-            ->map(fn (string $check) => $check::new())
-            ->map(fn (HealthCheck $check) => $check->run($pendingRestore))
-            ->filter(fn (Result $result) => $result->status === self::FAILURE);
+        $checks = [];
+
+        foreach (Arr::wrap(config('backup-restore.health-checks')) as $check) {
+            if (! is_string($check) || ! is_a($check, HealthCheck::class, true)) {
+                throw InvalidHealthCheck::notAHealthCheck(is_string($check) ? $check : get_debug_type($check));
+            }
+
+            $checks[] = $check;
+        }
+
+        $failedResults = collect($checks)
+            ->map(fn (string $check): HealthCheck => $check::new())
+            ->map(fn (HealthCheck $check): Result => $check->run($pendingRestore))
+            ->filter(fn (Result $result): bool => $result->status === self::FAILURE);
 
         if ($failedResults->count() > 0) {
             $failedResults->each(fn (Result $result) => error($result->message));
@@ -282,11 +287,20 @@ class RestoreCommand extends Command
 
     /**
      * @param  Collection<int, array{path: string, size: string}>  $listOfBackups
+     * @return Collection<string, string>
      */
     protected function getBackupOptions(Collection $listOfBackups, int $labelLength): Collection
     {
         return $listOfBackups->mapWithKeys(fn (array $backup): array => [
-            $backup['path'] => str_pad($backup['path'].' ', ($labelLength - strlen($backup['size'])), '.', STR_PAD_RIGHT).' '.$backup['size'],
+            $backup['path'] => $this->getBackupOptionLabel($backup, $labelLength),
         ]);
+    }
+
+    /**
+     * @param  array{path: string, size: string}  $backup
+     */
+    protected function getBackupOptionLabel(array $backup, int $labelLength): string
+    {
+        return str_pad($backup['path'].' ', ($labelLength - strlen($backup['size'])), '.', STR_PAD_RIGHT).' '.$backup['size'];
     }
 }
