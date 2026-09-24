@@ -111,6 +111,25 @@ it('restores pgsql database', function (string $backup, ?string $password = null
     ],
 ])->group('pgsql');
 
+it('stops before downloading anything if the database client is missing', function () {
+    config()->set('backup-restore.import_binary_path', '/does/not/exist/');
+
+    $this->artisan(RestoreCommand::class, [
+        '--disk' => 'remote',
+        '--backup' => 'Laravel/2023-01-28-mysql-no-compression-no-encryption.zip',
+        '--connection' => 'mysql-restore',
+        '--no-interaction' => true,
+    ])
+        ->expectsOutputToContain('Restore failed.')
+        ->expectsOutputToContain('/does/not/exist/mysql')
+        ->doesntExpectOutputToContain('vendor frames')
+        ->assertExitCode(1);
+
+    // The check runs before the confirmation prompt, so no backup was pulled
+    // down and there is nothing to clean up.
+    expect(Storage::disk('local')->allFiles('backup-restore-temp'))->toBeEmpty();
+})->group('mysql');
+
 it('renders a failure instead of a stack trace if no backups are found on given disk', function () {
     $this->artisan(RestoreCommand::class, [
         '--disk' => 'local',

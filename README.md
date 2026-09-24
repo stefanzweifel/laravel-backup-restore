@@ -54,8 +54,43 @@ return [
      * dumps you trust.
      */
     'allow_psql_meta_commands' => false,
+
+    /**
+     * The directory holding the database clients used to import a dump: mysql,
+     * mariadb, psql and pg_restore. Leave this empty when they are on the PATH
+     * of the PHP process, which is the usual case.
+     *
+     * Set one path for every connection:
+     *
+     *     'import_binary_path' => '/opt/homebrew/opt/mysql-client/bin',
+     *
+     * or one per connection, when the clients live in different places:
+     *
+     *     'import_binary_path' => [
+     *         'mysql' => '/opt/homebrew/opt/mysql-client/bin',
+     *         'pgsql' => '/Applications/Postgres.app/Contents/Versions/17/bin',
+     *     ],
+     *
+     * When this is empty, the connection's dump.dump_binary_path in
+     * config/database.php is used instead. That key belongs to
+     * spatie/laravel-backup and points at the dump binaries rather than the
+     * import ones; reading it is deprecated and will stop in the next major
+     * version.
+     */
+    'import_binary_path' => env('BACKUP_RESTORE_IMPORT_BINARY_PATH', ''),
 ];
 ```
+
+### Database clients
+
+Restoring a MySQL, MariaDB or PostgreSQL backup runs that database's client:
+`mysql`, `mariadb`, or `psql` and `pg_restore`. They have to be installed on the
+machine running the restore. SQLite needs nothing — it is imported through PDO.
+
+The command looks for them before it downloads anything, so a missing client
+fails in a second rather than after a long download. If they are not on the
+`PATH` of the PHP process, point `import_binary_path` at the directory holding
+them.
 
 ## Security
 
@@ -221,7 +256,7 @@ Each exception also carries the relevant facts as readonly properties, so you do
 | `NoDatabaseDumpsFound` | The archive has no `db-dumps` to import | `backup`, `filesInBackup` |
 | `DumpIsNotRestorable` | A dump is empty or holds no statements | `dumpFile`, `reason` |
 | `CannotCreateDbImporter` | The connection is missing or its driver is unsupported | `connectionName`, `driver` |
-| `CliNotFound` | The database binary is not on the `PATH` | `cli` |
+| `CliNotFound` | The database client was not found before the restore started | `cli` |
 | `ImportFailed` | The import command exited non-zero | `exitCode`, `output`, `errorOutput`, `dumpFile` |
 | `InvalidHealthCheck` | A configured health check is not a `HealthCheck` | `healthCheck`, `configKey` |
 
