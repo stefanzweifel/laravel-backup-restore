@@ -192,17 +192,20 @@ class RestoreCommand extends Command
 
         info("Fetch list of backups from $disk …");
         $listOfBackups = collect(Storage::disk($disk)->allFiles($name))
-            ->filter(fn ($file) => Str::endsWith($file, '.zip'));
+            ->filter(fn ($file) => Str::endsWith($file, '.zip'))
+            ->values();
 
-        if ($listOfBackups->count() === 0) {
+        $latestBackup = $listOfBackups->last();
+
+        if ($latestBackup === null) {
             throw NoBackupsFound::onDisk($disk, $name);
         }
 
         if ($this->option('backup') === 'latest') {
-            return $listOfBackups->last();
+            return $latestBackup;
         }
 
-        $backups = $listOfBackups->values()->map(fn (string $path): array => [
+        $backups = $listOfBackups->map(fn (string $path): array => [
             'path' => $path,
             'size' => Format::humanReadableSize(Storage::disk($disk)->size($path)),
         ]);
@@ -215,7 +218,7 @@ class RestoreCommand extends Command
         return (string) select(
             label: 'Which backup should be restored?',
             options: $this->getBackupOptions($backups, $labelLength)->all(),
-            default: $backups->last()['path'],
+            default: $latestBackup,
             scroll: 10
         );
     }
@@ -256,7 +259,9 @@ class RestoreCommand extends Command
             ->filter(fn (Result $result): bool => $result->status === self::FAILURE);
 
         if ($failedResults->count() > 0) {
-            $failedResults->each(fn (Result $result) => error($result->message));
+            $failedResults->each(fn (Result $result) => error(
+                $result->message ?? class_basename($result->healthCheck).' failed.'
+            ));
 
             return self::FAILURE;
         }
