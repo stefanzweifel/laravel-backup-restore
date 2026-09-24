@@ -7,7 +7,7 @@ parameters:
     configDirectories:
         - config
 
-    level: 5
+    level: 6
     paths:
         - src
         - config
