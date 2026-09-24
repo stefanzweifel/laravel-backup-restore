@@ -65,10 +65,24 @@ class RestoreCommand extends Command
         );
 
         $abort = new RestoreAbort;
+        $commandPid = getmypid();
 
         // Without ext-pcntl this registers nothing and the command behaves exactly as it
         // did before: a signal kills the process outright and its temporary files stay.
-        $this->trap($this->signalsToTrap(), function (int $signal) use ($abort): void {
+        //
+        // SIGINT does not reach this handler while a spin() is running: Spinner::spin()
+        // installs its own `exit()` handler for it (laravel/prompts Spinner.php:57) and
+        // restores the previous one afterwards. SIGTERM and SIGHUP are unaffected.
+        $this->trap($this->signalsToTrap(), function (int $signal) use ($abort, $commandPid): void {
+            $pid = getmypid();
+
+            // Laravel Prompts' spinner forks a child that inherits this handler, and
+            // Spinner::__destruct() ends that child with SIGHUP. It has to die of the
+            // signal the way it did before the trap existed, not record an abort.
+            if (! is_int($pid) || ! is_int($commandPid) || $pid !== $commandPid) {
+                $this->dieOfSignal($signal);
+            }
+
             // A second signal means the user is done waiting. Nothing is printed, and
             // whatever the first abort was still cleaning up is left where it is.
             if ($abort->wasRequested()) {
@@ -114,6 +128,10 @@ class RestoreCommand extends Command
             }
 
             $startedRestore = $pendingRestore;
+
+            // A signal that arrived while the user was answering the prompts, before
+            // the download pulls the whole archive down for nothing.
+            $this->guardAgainstAbort($abort, databaseWasTouched: false);
 
             $downloadBackupAction->execute($pendingRestore);
 

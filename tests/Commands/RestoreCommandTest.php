@@ -537,6 +537,10 @@ it('still exits with 1 when the restore failed rather than being aborted', funct
     ])
         ->expectsQuestion(lbrConfirmation(), true)
         ->assertExitCode(1);
+
+    // A failure part-way through the import keeps the files too: the extracted
+    // dump is the only copy of what was going in.
+    expect(Storage::disk('local')->allFiles('backup-restore-temp'))->not->toBeEmpty();
 })->group('sqlite');
 
 it('removes the temporary files after a successful restore', function () {
