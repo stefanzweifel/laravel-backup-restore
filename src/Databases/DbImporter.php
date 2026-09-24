@@ -65,10 +65,10 @@ abstract class DbImporter
                     ->abortWith($this->abort)
                     ->importFromFile($dumpFile);
             } catch (ImportAborted $exception) {
-                throw RestoreWasAborted::bySignal($exception->signal, databaseWasTouched: true);
+                throw RestoreWasAborted::bySignal($exception->signal, databaseWasTouched: true, previous: $exception);
             } catch (ImporterFailed|CannotStartImport|DumpContainsMetaCommand $exception) {
                 if ($this->abort?->wasRequested()) {
-                    throw RestoreWasAborted::bySignal($this->abort->signal() ?? 0, databaseWasTouched: true);
+                    throw RestoreWasAborted::bySignal($this->abort->signal() ?? 0, databaseWasTouched: true, previous: $exception);
                 }
 
                 throw ImportFailed::fromImporter($exception, $dumpFile);

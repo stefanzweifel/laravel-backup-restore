@@ -38,8 +38,8 @@ final class RestoreAbort
         $stoppers = $this->stoppers;
         $this->stoppers = [];
 
-        foreach ($stoppers as $stopper) {
-            $this->run($stopper);
+        foreach ($stoppers as $id => $stopper) {
+            $this->run($stopper, $id);
         }
     }
 
@@ -63,14 +63,15 @@ final class RestoreAbort
      */
     public function whileRunning(callable $stop): Closure
     {
-        if ($this->wasRequested()) {
-            $this->run($stop);
-
-            return static function (): void {};
-        }
-
         $id = $this->nextStopperId++;
-        $this->stoppers[$id] = $stop;
+
+        if ($this->wasRequested()) {
+            // run() puts it back if it threw, so the returned closure has to be
+            // able to de-register it either way.
+            $this->run($stop, $id);
+        } else {
+            $this->stoppers[$id] = $stop;
+        }
 
         return function () use ($id): void {
             unset($this->stoppers[$id]);
@@ -83,13 +84,17 @@ final class RestoreAbort
      *
      * @param  callable(): void  $stop
      */
-    private function run(callable $stop): void
+    private function run(callable $stop, int $id): void
     {
         try {
             $stop();
         } catch (Throwable) {
-            // The process is already gone, or was never started. Either way
-            // there is nothing left to stop.
+            // Put it back so a later signal tries again. A first attempt can
+            // fail on something temporary: a process that has not started yet,
+            // or a call that cannot be made from the frame the handler
+            // interrupted. A stopper whose process is really gone is harmless
+            // to retry.
+            $this->stoppers[$id] = $stop;
         }
     }
 }

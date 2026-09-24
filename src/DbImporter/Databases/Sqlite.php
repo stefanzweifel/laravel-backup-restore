@@ -44,6 +44,13 @@ class Sqlite extends DbImporter
 
     protected function runImport(string $dumpFile): void
     {
+        // Before the database file is created by the PDO constructor, and before
+        // the dump is opened. A dump that yields no statements never enters the
+        // loop below, so without this an aborted import would report success.
+        if ($this->abort?->wasRequested()) {
+            throw ImportAborted::bySignal($this->abort->signal() ?? 0);
+        }
+
         try {
             $connection = new PDO('sqlite:'.$this->dbName, options: [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,

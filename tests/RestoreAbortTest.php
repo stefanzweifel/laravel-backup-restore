@@ -99,3 +99,26 @@ it('runs a stopper registered after the abort was requested', function () {
 
     expect($ran)->toBeTrue();
 });
+
+it('retries a stopper that threw when a second signal arrives', function () {
+    $abort = new RestoreAbort;
+    $calls = 0;
+
+    $abort->whileRunning(function () use (&$calls) {
+        $calls++;
+
+        if ($calls === 1) {
+            throw new RuntimeException('cannot signal the child from here');
+        }
+    });
+
+    $abort->requestAbort(2);
+    expect($calls)->toBe(1);
+
+    $abort->requestAbort(15);
+    expect($calls)->toBe(2);
+
+    // Succeeded the second time, so it is not registered any more.
+    $abort->requestAbort(15);
+    expect($calls)->toBe(2);
+});

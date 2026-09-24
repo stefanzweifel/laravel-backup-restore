@@ -128,19 +128,43 @@ abstract class DbImporter
 
         $process->setInput($input);
 
-        // Signalling rather than Process::stop(): this runs inside a signal handler
-        // that interrupted Process::wait(), and stop() closes the pipes and the process
-        // handle the interrupted wait loop is still holding. The child exits, run()
-        // returns as it would for any other non-zero exit, and the abort is reported by
-        // the caller that owns the token.
-        $releaseStopper = $this->abort?->whileRunning(function () use ($process): void {
-            if ($process->isRunning() && defined('SIGTERM')) {
-                $process->signal((int) constant('SIGTERM'));
-            }
-        }) ?? static function (): void {};
+        // start() and wait() instead of run(), so that the pid is known before the
+        // stopper is registered. The stopper runs inside a signal handler that
+        // interrupted wait(), and nothing Symfony owns may be touched from there:
+        // every Process method that reports on the child (isRunning(), getPid(),
+        // signal(), stop()) goes through updateStatus() -> readPipes() -> the input
+        // writer, which re-enters the generator or the stream the interrupted frame
+        // is already using. Signalling the pid through posix_kill() touches none of
+        // it. The child exits, wait() returns as it would for any other non-zero
+        // exit, and the abort is reported by the caller that owns the token.
+        $releaseStopper = static function (): void {};
 
         try {
-            $process->run();
+            $process->start();
+
+            $pid = $process->getPid();
+
+            $releaseStopper = $this->abort?->whileRunning(function () use ($process, $pid): void {
+                if (! defined('SIGTERM')) {
+                    return;
+                }
+
+                $signal = (int) constant('SIGTERM');
+
+                if ($pid !== null && function_exists('posix_kill')) {
+                    posix_kill($pid, $signal);
+
+                    return;
+                }
+
+                // Without ext-posix there is no way to reach the child except
+                // through Symfony, which is the re-entrant path described above.
+                // Interrupting the import is worth the risk; leaving it running
+                // until it finishes is not.
+                $process->signal($signal);
+            }) ?? $releaseStopper;
+
+            $process->wait();
         } catch (ProcessTimedOutException) {
             $process->stop(0);
 

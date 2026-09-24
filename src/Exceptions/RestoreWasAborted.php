@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Wnx\LaravelBackupRestore\Exceptions;
 
 use Exception;
+use Throwable;
 
 class RestoreWasAborted extends Exception implements BackupRestoreException
 {
@@ -25,16 +26,22 @@ class RestoreWasAborted extends Exception implements BackupRestoreException
         public readonly int $signal,
         public readonly bool $databaseWasTouched,
         string $message,
+        ?Throwable $previous = null,
     ) {
-        parent::__construct($message);
+        parent::__construct($message, previous: $previous);
     }
 
-    public static function bySignal(int $signal, bool $databaseWasTouched): self
+    /**
+     * $previous carries the failure the import reported before the signal was
+     * seen, where there was one, so it is not lost.
+     */
+    public static function bySignal(int $signal, bool $databaseWasTouched, ?Throwable $previous = null): self
     {
         return new self(
             signal: $signal,
             databaseWasTouched: $databaseWasTouched,
             message: 'The restore was interrupted by '.self::nameOf($signal).'.',
+            previous: $previous,
         );
     }
 

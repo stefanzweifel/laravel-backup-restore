@@ -24,21 +24,37 @@ it('refuses to start an import when the abort was already requested', function (
     expect(Schema::connection('sqlite')->hasTable('users'))->toBeFalse();
 });
 
+it('refuses to start a child process when the abort was already requested', function () {
+    $abort = new RestoreAbort;
+    $abort->requestAbort(15);
+
+    // A CLI importer, so the guard under test is the one in
+    // DbImporter::runImport() rather than the poll in the sqlite loop.
+    expect(fn () => mysqlImporter()->abortWith($abort)
+        ->importFromFile(lbrFixture('2023-01-28-mysql-no-compression-no-encryption.sql')))
+        ->toThrow(ImportAborted::class);
+
+    // Nothing was imported, which is only true if no mysql child ever ran.
+    expect(Schema::connection('mysql-restore')->hasTable('users'))->toBeFalse();
+});
+
 it('stops a sqlite import between statements', function () {
     $abort = new RestoreAbort;
 
-    // A dump big enough that the alarm lands somewhere in the middle of the
-    // statement loop rather than before or after it.
+    // A dump big enough that the statement loop comfortably outruns the alarm,
+    // which has one-second granularity. Sized so the import takes several times
+    // that on a fast machine and the alarm lands in the middle of the loop.
     $dump = tempnam(sys_get_temp_dir(), 'lbr-abort-').'.sql';
     $handle = fopen($dump, 'wb');
     fwrite($handle, "CREATE TABLE lbr_probe (id integer, payload text);\n");
-    for ($i = 0; $i < 40_000; $i++) {
+    for ($i = 0; $i < 150_000; $i++) {
         fwrite($handle, "INSERT INTO lbr_probe VALUES ({$i}, 'padding-padding-padding-padding');\n");
     }
     fclose($handle);
 
     // A real signal, delivered while the import is running. pcntl_async_signals()
     // is what lets the handler run between two PDO::exec() calls.
+    $asyncSignalsWereOn = pcntl_async_signals();
     pcntl_async_signals(true);
     pcntl_signal(SIGALRM, function () use ($abort): void {
         $abort->requestAbort(SIGTERM);
@@ -52,10 +68,11 @@ it('stops a sqlite import between statements', function () {
         // Some rows made it in before the alarm; the point is that not all did.
         expect(DB::connection('sqlite')->table('lbr_probe')->count())
             ->toBeGreaterThan(0)
-            ->toBeLessThan(40_000);
+            ->toBeLessThan(150_000);
     } finally {
         pcntl_alarm(0);
         pcntl_signal(SIGALRM, SIG_DFL);
+        pcntl_async_signals($asyncSignalsWereOn);
         unlink($dump);
     }
 })->skip(fn () => ! extension_loaded('pcntl'), 'Requires ext-pcntl.');
