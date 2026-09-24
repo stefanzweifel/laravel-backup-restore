@@ -17,6 +17,21 @@ function lbrFixture(string $name): string
     return __DIR__.'/storage/Laravel/'.$name;
 }
 
+const LBR_SQLITE_BACKUP = 'Laravel/2023-02-28-sqlite-no-compression-no-encryption.zip';
+
+/**
+ * The confirmation question the command asks for LBR_SQLITE_BACKUP. The text
+ * has to match exactly, so it is built in one place.
+ */
+function lbrConfirmation(bool $reset = false): string
+{
+    $label = 'Proceed to restore "'.LBR_SQLITE_BACKUP.'" using the "sqlite-restore" database connection. (Database: database/database.sqlite)';
+
+    return $reset
+        ? $label.' This drops all tables in that database and cannot be undone.'
+        : $label;
+}
+
 function mysqlImporter(string $connection = 'mysql-restore'): MySql
 {
     $config = config("database.connections.{$connection}");

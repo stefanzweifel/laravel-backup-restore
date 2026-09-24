@@ -6,9 +6,18 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Wnx\LaravelBackupRestore\Actions\DecompressBackupAction;
+use Wnx\LaravelBackupRestore\Actions\ImportDumpAction;
+use Wnx\LaravelBackupRestore\Actions\ResetDatabaseAction;
 use Wnx\LaravelBackupRestore\Commands\RestoreCommand;
+use Wnx\LaravelBackupRestore\DbImporter\Exceptions\ImportFailed as ImporterFailed;
 use Wnx\LaravelBackupRestore\Events\DatabaseReset;
 use Wnx\LaravelBackupRestore\Events\LocalBackupRemoved;
+use Wnx\LaravelBackupRestore\Events\RestoreAborted;
+use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
+use Wnx\LaravelBackupRestore\Exceptions\RestoreWasAborted;
+use Wnx\LaravelBackupRestore\PendingRestore;
+use Wnx\LaravelBackupRestore\RestoreAbort;
 use Wnx\LaravelBackupRestore\Tests\Support\FailsWithoutMessage;
 
 use function Pest\Laravel\artisan;
@@ -393,3 +402,139 @@ it('restores pgsql database with binary dump', function (string $backup, ?string
         'backup' => 'Laravel/2025-12-26-pgsql-no-compression-custom-extension-binary-dump.zip',
     ],
 ])->group('pgsql');
+
+it('exits with the signal exit code when the restore is aborted before the import', function () {
+    // Stands in for a signal arriving during extraction.
+    app()->bind(DecompressBackupAction::class, fn () => new class extends DecompressBackupAction
+    {
+        public function execute(PendingRestore $pendingRestore, ?RestoreAbort $abort = null): void
+        {
+            $abort?->requestAbort(2);
+
+            throw RestoreWasAborted::bySignal(2, databaseWasTouched: false);
+        }
+    });
+
+    $this->artisan(RestoreCommand::class, [
+        '--disk' => 'remote',
+        '--backup' => LBR_SQLITE_BACKUP,
+        '--connection' => 'sqlite-restore',
+        '--no-interaction' => true,
+    ])
+        ->expectsQuestion(lbrConfirmation(), true)
+        ->assertExitCode(130);
+
+    expect(Storage::disk('local')->allFiles('backup-restore-temp'))->toBeEmpty();
+})->group('sqlite');
+
+it('keeps the temporary files when the abort came after the import started', function () {
+    app()->bind(ImportDumpAction::class, fn () => new class extends ImportDumpAction
+    {
+        public function execute(PendingRestore $pendingRestore, ?RestoreAbort $abort = null): void
+        {
+            throw RestoreWasAborted::bySignal(15, databaseWasTouched: true);
+        }
+    });
+
+    $this->artisan(RestoreCommand::class, [
+        '--disk' => 'remote',
+        '--backup' => LBR_SQLITE_BACKUP,
+        '--connection' => 'sqlite-restore',
+        '--no-interaction' => true,
+    ])
+        ->expectsQuestion(lbrConfirmation(), true)
+        ->assertExitCode(143);
+
+    expect(Storage::disk('local')->allFiles('backup-restore-temp'))->not->toBeEmpty();
+})->group('sqlite');
+
+it('keeps the temporary files when the abort came during --reset', function () {
+    app()->bind(ResetDatabaseAction::class, fn () => new class extends ResetDatabaseAction
+    {
+        public function execute(PendingRestore $pendingRestore): void
+        {
+            throw RestoreWasAborted::bySignal(15, databaseWasTouched: true);
+        }
+    });
+
+    $this->artisan(RestoreCommand::class, [
+        '--disk' => 'remote',
+        '--backup' => LBR_SQLITE_BACKUP,
+        '--connection' => 'sqlite-restore',
+        '--reset' => true,
+        '--no-interaction' => true,
+    ])
+        ->expectsQuestion(lbrConfirmation(reset: true), true)
+        ->assertExitCode(143);
+
+    expect(Storage::disk('local')->allFiles('backup-restore-temp'))->not->toBeEmpty();
+})->group('sqlite');
+
+it('keeps the temporary files with --keep even when the database was untouched', function () {
+    app()->bind(DecompressBackupAction::class, fn () => new class extends DecompressBackupAction
+    {
+        public function execute(PendingRestore $pendingRestore, ?RestoreAbort $abort = null): void
+        {
+            throw RestoreWasAborted::bySignal(2, databaseWasTouched: false);
+        }
+    });
+
+    $this->artisan(RestoreCommand::class, [
+        '--disk' => 'remote',
+        '--backup' => LBR_SQLITE_BACKUP,
+        '--connection' => 'sqlite-restore',
+        '--keep' => true,
+        '--no-interaction' => true,
+    ])
+        ->expectsQuestion(lbrConfirmation(), true)
+        ->assertExitCode(130);
+
+    expect(Storage::disk('local')->allFiles('backup-restore-temp'))->not->toBeEmpty();
+})->group('sqlite');
+
+it('dispatches a RestoreAborted event', function () {
+    Event::fake([RestoreAborted::class]);
+
+    app()->bind(ImportDumpAction::class, fn () => new class extends ImportDumpAction
+    {
+        public function execute(PendingRestore $pendingRestore, ?RestoreAbort $abort = null): void
+        {
+            throw RestoreWasAborted::bySignal(15, databaseWasTouched: true);
+        }
+    });
+
+    $this->artisan(RestoreCommand::class, [
+        '--disk' => 'remote',
+        '--backup' => LBR_SQLITE_BACKUP,
+        '--connection' => 'sqlite-restore',
+        '--no-interaction' => true,
+    ])
+        ->expectsQuestion(lbrConfirmation(), true)
+        ->assertExitCode(143);
+
+    Event::assertDispatched(RestoreAborted::class, function (RestoreAborted $event) {
+        return $event->signal === 15 && $event->databaseWasTouched === true;
+    });
+})->group('sqlite');
+
+it('still exits with 1 when the restore failed rather than being aborted', function () {
+    app()->bind(ImportDumpAction::class, fn () => new class extends ImportDumpAction
+    {
+        public function execute(PendingRestore $pendingRestore, ?RestoreAbort $abort = null): void
+        {
+            throw ImportFailed::fromImporter(
+                ImporterFailed::statementFailed('the import went wrong'),
+                'dump.sql',
+            );
+        }
+    });
+
+    $this->artisan(RestoreCommand::class, [
+        '--disk' => 'remote',
+        '--backup' => LBR_SQLITE_BACKUP,
+        '--connection' => 'sqlite-restore',
+        '--no-interaction' => true,
+    ])
+        ->expectsQuestion(lbrConfirmation(), true)
+        ->assertExitCode(1);
+})->group('sqlite');

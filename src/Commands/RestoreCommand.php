@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Wnx\LaravelBackupRestore\Commands;
 
+use Closure;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -19,13 +20,16 @@ use Wnx\LaravelBackupRestore\Actions\DownloadBackupAction;
 use Wnx\LaravelBackupRestore\Actions\ImportDumpAction;
 use Wnx\LaravelBackupRestore\Actions\ResetDatabaseAction;
 use Wnx\LaravelBackupRestore\Actions\VerifyDumpsAction;
+use Wnx\LaravelBackupRestore\Events\RestoreAborted;
 use Wnx\LaravelBackupRestore\Exceptions\BackupRestoreException;
 use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 use Wnx\LaravelBackupRestore\Exceptions\InvalidHealthCheck;
 use Wnx\LaravelBackupRestore\Exceptions\NoBackupsFound;
+use Wnx\LaravelBackupRestore\Exceptions\RestoreWasAborted;
 use Wnx\LaravelBackupRestore\HealthChecks\HealthCheck;
 use Wnx\LaravelBackupRestore\HealthChecks\Result;
 use Wnx\LaravelBackupRestore\PendingRestore;
+use Wnx\LaravelBackupRestore\RestoreAbort;
 
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\error;
@@ -60,9 +64,28 @@ class RestoreCommand extends Command
             ! $this->input->isInteractive() || windows_os() || app()->runningUnitTests()
         );
 
+        $abort = new RestoreAbort;
+
+        // Without ext-pcntl this registers nothing and the command behaves exactly as it
+        // did before: a signal kills the process outright and its temporary files stay.
+        $this->trap($this->signalsToTrap(), function (int $signal) use ($abort): void {
+            // A second signal means the user is done waiting. Nothing is printed, and
+            // whatever the first abort was still cleaning up is left where it is.
+            if ($abort->wasRequested()) {
+                $this->dieOfSignal($signal);
+            }
+
+            $abort->requestAbort($signal);
+        });
+
         // Set once the restore is past the confirmation prompt, so that the
         // finally block only cleans up files this run actually created.
         $startedRestore = null;
+
+        // Past the point where the database is being changed an abort or a
+        // failure keeps the local files: they are the only copy of what is
+        // going in.
+        $databaseWasTouched = false;
 
         try {
             $connectionOption = $this->option('connection')
@@ -91,28 +114,106 @@ class RestoreCommand extends Command
             $startedRestore = $pendingRestore;
 
             $downloadBackupAction->execute($pendingRestore);
-            $decompressBackupAction->execute($pendingRestore);
+
+            // The download is not interruptible: Storage::writeStream() blocks inside
+            // flysystem. A signal that arrived during it is picked up here.
+            $this->guardAgainstAbort($abort, databaseWasTouched: false);
+
+            $decompressBackupAction->execute($pendingRestore, $abort);
 
             // Find and check the dumps before --reset drops anything. An empty
             // or truncated dump otherwise leaves the database wiped and the
             // original data gone.
             $verifyDumpsAction->execute($pendingRestore, verifyContent: (bool) $this->option('reset'));
 
+            $this->guardAgainstAbort($abort, databaseWasTouched: false);
+
             if ($this->option('reset')) {
+                $databaseWasTouched = true;
+
                 $resetDatabaseAction->execute($pendingRestore);
             }
 
-            $importDumpAction->execute($pendingRestore);
+            $databaseWasTouched = true;
+
+            $importDumpAction->execute($pendingRestore, $abort);
 
             return $this->runHealthChecks($pendingRestore);
+        } catch (RestoreWasAborted $exception) {
+            // The exception carries what the throwing layer knew. The command knows
+            // whether --reset or the import had started, which is the wider fact.
+            $databaseWasTouched = $databaseWasTouched || $exception->databaseWasTouched;
+
+            if ($startedRestore !== null) {
+                event(new RestoreAborted($startedRestore, $exception->signal, $databaseWasTouched));
+            }
+
+            return $this->renderAbort($exception, $databaseWasTouched);
         } catch (BackupRestoreException $exception) {
             return $this->renderFailure($exception);
         } finally {
-            if ($startedRestore !== null && ! $this->option('keep')) {
+            if ($startedRestore !== null && ! $this->option('keep') && ! $databaseWasTouched) {
                 info('Cleaning up …');
                 $cleanupLocalBackupAction->execute($startedRestore);
             }
         }
+    }
+
+    /**
+     * The signals to trap, resolved lazily. Illuminate\Console\Signals only calls
+     * this when ext-pcntl is loaded, which is the only time the constants exist.
+     *
+     * @return Closure(): array<int, int>
+     */
+    private function signalsToTrap(): Closure
+    {
+        return static fn (): array => array_map(
+            static fn (string $name): int => (int) constant($name),
+            array_values(array_filter(
+                ['SIGINT', 'SIGTERM', 'SIGHUP'],
+                static fn (string $name): bool => defined($name),
+            )),
+        );
+    }
+
+    /**
+     * A second signal. Put the signal back to its default disposition and re-raise
+     * it, so the process dies the way it would have without the trap. Anything the
+     * first signal was still cleaning up is left where it is, which is the point.
+     */
+    private function dieOfSignal(int $signal): never
+    {
+        $this->untrap();
+
+        if (function_exists('pcntl_signal') && function_exists('posix_kill') && function_exists('posix_getpid')) {
+            pcntl_signal($signal, SIG_DFL);
+            posix_kill(posix_getpid(), $signal);
+        }
+
+        exit(128 + $signal);
+    }
+
+    /**
+     * @throws RestoreWasAborted
+     */
+    private function guardAgainstAbort(RestoreAbort $abort, bool $databaseWasTouched): void
+    {
+        if ($abort->wasRequested()) {
+            throw RestoreWasAborted::bySignal($abort->signal() ?? 0, $databaseWasTouched);
+        }
+    }
+
+    private function renderAbort(RestoreWasAborted $exception, bool $databaseWasTouched): int
+    {
+        warning($exception->getMessage());
+
+        if ($databaseWasTouched) {
+            error('The database may hold a partial restore.');
+        }
+
+        $this->writeHint($exception->hint());
+
+        return $exception->exitCode();
     }
 
     private function renderFailure(BackupRestoreException $exception): int

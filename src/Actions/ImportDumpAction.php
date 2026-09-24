@@ -39,8 +39,8 @@ class ImportDumpAction
         info('Importing database '.str('dump')->plural($dbDumps)->__toString().' …');
 
         $dbDumps->each(function ($dbDump) use ($pendingRestore, $importer, $abort) {
-            // Between two dumps of a multi-database backup. The dump that was
-            // already imported stays imported; the database is partial either way.
+            // Reaching the import step counts as touching the database, even
+            // before the first byte of the first dump is written.
             if ($abort?->wasRequested()) {
                 throw RestoreWasAborted::bySignal($abort->signal() ?? 0, databaseWasTouched: true);
             }
