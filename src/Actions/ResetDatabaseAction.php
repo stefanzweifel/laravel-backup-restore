@@ -12,7 +12,7 @@ use function Laravel\Prompts\info;
 
 class ResetDatabaseAction
 {
-    public function execute(PendingRestore $pendingRestore)
+    public function execute(PendingRestore $pendingRestore): void
     {
         info('Reset database …');
 

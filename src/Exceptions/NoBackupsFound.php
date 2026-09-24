@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Wnx\LaravelBackupRestore\Exceptions;
 
 use Exception;
+use Illuminate\Support\Facades\Config;
 
 class NoBackupsFound extends Exception implements BackupRestoreException
 {
@@ -18,9 +19,9 @@ class NoBackupsFound extends Exception implements BackupRestoreException
 
     public static function onDisk(string $disk, ?string $backupName = null): self
     {
-        return new static(
+        return new self(
             disk: $disk,
-            backupName: $backupName ?? config('backup.backup.name'),
+            backupName: $backupName ?? Config::string('backup.backup.name'),
             message: "No backups found on disk \"{$disk}\".",
         );
     }
