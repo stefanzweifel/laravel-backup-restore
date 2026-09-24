@@ -178,6 +178,12 @@ class RestoreCommand extends Command
                 info('Cleaning up …');
                 $cleanupLocalBackupAction->execute($startedRestore);
             }
+
+            // Last, so that a second signal can still interrupt a slow directory
+            // delete. Removing the trap matters for a long-lived process that runs
+            // this command through Artisan::call(): the closure would otherwise stay
+            // registered and handle a later, unrelated signal.
+            $this->untrap();
         }
     }
 
@@ -234,8 +240,32 @@ class RestoreCommand extends Command
         }
 
         $this->writeHint($exception->hint());
+        $this->writeHint($this->describeLocalFiles($databaseWasTouched));
+
+        if ($this->output->isVerbose() && ($previous = $exception->getPrevious()) !== null) {
+            warning($previous::class);
+            $this->writeHint($previous->getMessage());
+        }
 
         return $exception->exitCode();
+    }
+
+    /**
+     * What happened to the downloaded archive and the extracted dump. The
+     * exception cannot say: it knows the database state but not --keep. The
+     * finally block above decides the same way.
+     */
+    private function describeLocalFiles(bool $databaseWasTouched): string
+    {
+        if ($databaseWasTouched) {
+            return 'The downloaded files were kept so the restore can be re-run without downloading the backup again.';
+        }
+
+        if ($this->option('keep')) {
+            return 'The downloaded files were kept because of --keep.';
+        }
+
+        return 'The downloaded files were removed.';
     }
 
     private function renderFailure(BackupRestoreException $exception): int

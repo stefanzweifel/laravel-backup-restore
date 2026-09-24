@@ -10,8 +10,9 @@ use Throwable;
 class RestoreWasAborted extends Exception implements BackupRestoreException
 {
     /**
-     * Signal numbers differ between platforms, so the constants are read at
-     * runtime rather than hard-coded. They only exist with ext-pcntl.
+     * These four signal numbers are the same on every POSIX platform, so
+     * hard-coding them is safe. The map exists only to name a signal without
+     * referencing the SIGINT, SIGTERM and SIGHUP constants, which need ext-pcntl.
      *
      * @var array<string, int>
      */
@@ -53,13 +54,17 @@ class RestoreWasAborted extends Exception implements BackupRestoreException
         return 128 + $this->signal;
     }
 
+    /**
+     * The database state only. What happened to the downloaded files depends on
+     * --keep, which the command knows and this exception does not.
+     */
     public function hint(): ?string
     {
         if ($this->databaseWasTouched) {
-            return 'The database holds a partial restore. The downloaded files were kept so the restore can be re-run without downloading the backup again.';
+            return 'The database holds a partial restore. Re-run the restore to finish it.';
         }
 
-        return 'The database was not touched. The downloaded files were removed.';
+        return 'The database was not touched.';
     }
 
     private static function nameOf(int $signal): string
