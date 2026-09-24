@@ -46,12 +46,19 @@ $registry->register(SIGTERM, static function (int $signal) use ($abort, $probePi
 
     $abort->requestAbort($signal);
 
+    // Tell the parent the handler ran. Standard signals do not queue, so a test
+    // that wants a second delivery has to wait for the first to be handled
+    // before sending it.
+    fwrite(STDOUT, "aborting\n");
+
     // Stand in for the slow cleanup the real command does after an abort, so
     // that a second signal has something to interrupt. Kept under the test's
     // own wait budget.
     usleep(3_000_000);
 });
 
+// A fixed 30 seconds, so the child cannot outlive the test by more than that
+// even if the probe itself is killed before it gets to stop it.
 $process = new Process(['sleep', '30']);
 
 // start() and wait() instead of run(), and posix_kill() on the pid instead of
@@ -77,10 +84,11 @@ try {
     // A child killed through posix_kill() rather than Process::signal() makes
     // wait() throw ProcessSignaledException, because Symfony only knows about
     // signals it sent itself. The shipped path reaches the same point:
-    // DbImporter::runImport() turns it into CannotStartImport and
+    // DbImporter::runImport() turns it into ImportAborted when the process had
+    // started and the abort token was set, and
     // Databases\DbImporter::importToDatabase() turns that into
-    // RestoreWasAborted whenever the abort token was set. Anything else is a
-    // genuine failure and is reported as one.
+    // RestoreWasAborted. Anything else is a genuine failure and is reported as
+    // one.
     if (! $abort->wasRequested()) {
         throw $throwable;
     }

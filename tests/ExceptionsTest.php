@@ -215,6 +215,15 @@ it('hints at re-running the restore when the database was touched', function () 
         ->not->toContain('partial');
 });
 
+it('says nothing about the local files, which depend on --keep', function () {
+    // Only RestoreCommand knows whether --keep was given, so the hint stays out
+    // of it rather than guessing.
+    expect(RestoreWasAborted::bySignal(2, databaseWasTouched: true)->hint())
+        ->not->toContain('files')
+        ->and(RestoreWasAborted::bySignal(2, databaseWasTouched: false)->hint())
+        ->not->toContain('files');
+});
+
 it('carries the signal on an aborted import', function () {
     expect(ImportAborted::bySignal(15)->signal)->toBe(15);
 });

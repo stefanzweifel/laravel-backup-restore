@@ -6,6 +6,25 @@ use Symfony\Component\Process\Exception\ProcessSignaledException;
 use Symfony\Component\Process\Process;
 
 /**
+ * Waits until the probe has written $needle to stdout. A deadline, so a line
+ * that never arrives fails the test instead of blocking the suite.
+ */
+function lbrWaitForProbeOutput(Process $probe, string $needle, string $failure, float $seconds = 10.0): void
+{
+    $deadline = microtime(true) + $seconds;
+
+    while (! str_contains($probe->getOutput(), $needle)) {
+        if (microtime(true) > $deadline) {
+            $probe->stop(0);
+
+            throw new RuntimeException($failure);
+        }
+
+        usleep(50_000);
+    }
+}
+
+/**
  * Starts the probe and waits until it reports that its child is running.
  */
 function lbrStartSignalProbe(): Process
@@ -18,17 +37,9 @@ function lbrStartSignalProbe(): Process
     $probe->setTimeout(20.0);
     $probe->start();
 
-    $deadline = microtime(true) + 10;
-
-    while (! str_contains($probe->getOutput(), 'ready')) {
-        if (microtime(true) > $deadline) {
-            $probe->stop(0);
-
-            throw new RuntimeException('The probe never started its child process.');
-        }
-
-        usleep(50_000);
-    }
+    // stop(0) ends the probe but not its own `sleep 30` grandchild, if it got
+    // that far. That one is bounded by the 30 seconds it sleeps for.
+    lbrWaitForProbeOutput($probe, 'ready', 'The probe never started its child process.');
 
     return $probe;
 }
@@ -63,9 +74,13 @@ it('dies on the second signal instead of aborting again', function () {
         expect($pid)->not->toBeNull();
 
         // The probe stays busy after the first signal, so the second one has to
-        // end it outright.
+        // end it outright. Standard signals do not queue: wait for the handler
+        // to report that it ran, or under load both deliveries collapse into one
+        // and the probe aborts once.
         posix_kill($pid, SIGTERM);
-        usleep(100_000);
+
+        lbrWaitForProbeOutput($probe, 'aborting', 'The probe never handled the first signal.');
+
         posix_kill($pid, SIGTERM);
 
         try {

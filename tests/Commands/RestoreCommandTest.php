@@ -7,7 +7,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Wnx\LaravelBackupRestore\Actions\CheckDependenciesAction;
 use Wnx\LaravelBackupRestore\Actions\DecompressBackupAction;
+use Wnx\LaravelBackupRestore\Actions\DownloadBackupAction;
 use Wnx\LaravelBackupRestore\Actions\ImportDumpAction;
 use Wnx\LaravelBackupRestore\Actions\ResetDatabaseAction;
 use Wnx\LaravelBackupRestore\Commands\RestoreCommand;
@@ -423,6 +425,8 @@ it('exits with the signal exit code when the restore is aborted before the impor
         '--no-interaction' => true,
     ])
         ->expectsQuestion(lbrConfirmation(), true)
+        ->expectsOutputToContain('The database was not touched.')
+        ->expectsOutputToContain('The downloaded files were removed.')
         ->assertExitCode(130);
 
     expect(Storage::disk('local')->allFiles('backup-restore-temp'))->toBeEmpty();
@@ -444,6 +448,8 @@ it('keeps the temporary files when the abort came after the import started', fun
         '--no-interaction' => true,
     ])
         ->expectsQuestion(lbrConfirmation(), true)
+        ->expectsOutputToContain('The database holds a partial restore.')
+        ->expectsOutputToContain('The downloaded files were kept so the restore can be re-run')
         ->assertExitCode(143);
 
     expect(Storage::disk('local')->allFiles('backup-restore-temp'))->not->toBeEmpty();
@@ -488,10 +494,79 @@ it('keeps the temporary files with --keep even when the database was untouched',
         '--no-interaction' => true,
     ])
         ->expectsQuestion(lbrConfirmation(), true)
+        ->expectsOutputToContain('The database was not touched.')
+        ->expectsOutputToContain('The downloaded files were kept because of --keep.')
         ->assertExitCode(130);
 
     expect(Storage::disk('local')->allFiles('backup-restore-temp'))->not->toBeEmpty();
 })->group('sqlite');
+
+it('reports the files as kept when --keep meets a touched database', function () {
+    app()->bind(ImportDumpAction::class, fn () => new class extends ImportDumpAction
+    {
+        public function execute(PendingRestore $pendingRestore, ?RestoreAbort $abort = null): void
+        {
+            throw RestoreWasAborted::bySignal(15, databaseWasTouched: true);
+        }
+    });
+
+    $this->artisan(RestoreCommand::class, [
+        '--disk' => 'remote',
+        '--backup' => LBR_SQLITE_BACKUP,
+        '--connection' => 'sqlite-restore',
+        '--keep' => true,
+        '--no-interaction' => true,
+    ])
+        ->expectsQuestion(lbrConfirmation(), true)
+        ->expectsOutputToContain('The database holds a partial restore.')
+        ->expectsOutputToContain('The downloaded files were kept so the restore can be re-run')
+        ->assertExitCode(143);
+
+    expect(Storage::disk('local')->allFiles('backup-restore-temp'))->not->toBeEmpty();
+})->group('sqlite');
+
+it('stops before the download when the abort arrived while the prompts were open', function () {
+    // The abort token lives inside handle(), so the only thing that can request it
+    // this early is the real signal handler. Laravel skips registering the trap
+    // under runningUnitTests(), hence the override.
+    Signals::resolveAvailabilityUsing(fn () => true);
+
+    app()->bind(CheckDependenciesAction::class, fn () => new class extends CheckDependenciesAction
+    {
+        public function execute(string $connection): void
+        {
+            // Runs inside handle(), after the trap is registered, so the handler
+            // records the abort rather than the process dying of the signal.
+            posix_kill((int) getmypid(), SIGINT);
+        }
+    });
+
+    app()->bind(DownloadBackupAction::class, fn () => new class extends DownloadBackupAction
+    {
+        public function execute(PendingRestore $pendingRestore): void
+        {
+            throw new RuntimeException('The backup must not be downloaded after an abort.');
+        }
+    });
+
+    try {
+        $this->artisan(RestoreCommand::class, [
+            '--disk' => 'remote',
+            '--backup' => LBR_SQLITE_BACKUP,
+            '--connection' => 'sqlite-restore',
+            '--no-interaction' => true,
+        ])
+            ->expectsQuestion(lbrConfirmation(), true)
+            ->assertExitCode(130);
+    } finally {
+        Signals::resolveAvailabilityUsing(null);
+    }
+
+    expect(Storage::disk('local')->allFiles('backup-restore-temp'))->toBeEmpty();
+})
+    ->skip(fn () => ! extension_loaded('pcntl') || ! extension_loaded('posix'), 'Requires ext-pcntl and ext-posix.')
+    ->skip(fn () => windows_os(), 'Signals are not available on Windows.')
+    ->group('sqlite');
 
 it('dispatches a RestoreAborted event', function () {
     Event::fake([RestoreAborted::class]);
@@ -574,9 +649,12 @@ it('removes the temporary files when a health check fails after a completed impo
     expect(Storage::disk('local')->allFiles('backup-restore-temp'))->toBeEmpty();
 })->group('sqlite');
 
-it('restores normally when ext-pcntl is unavailable', function () {
-    // Laravel resolves signal availability through this hook, so the command can
-    // be exercised as it behaves on a build without the extension.
+it('registers no trap and still restores when Signals reports pcntl unavailable', function () {
+    // Guards the contract with Illuminate\Console\Signals: trap() must be a no-op
+    // when availability resolves to false, and untrap() must not blow up on a trap
+    // that was never registered. The rest of the suite does not cover that — it
+    // runs with the default resolver, which returns false only because of
+    // runningUnitTests(), and a Laravel change there would go unnoticed.
     Signals::resolveAvailabilityUsing(fn () => false);
 
     try {
