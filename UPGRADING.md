@@ -111,3 +111,35 @@ which only search the `PATH` the binary is not on.
 
 `spatie/laravel-backup` supports the `mariadb` driver; this package did not. A connection with
 `'driver' => 'mariadb'` is now imported with the `mariadb` binary.
+
+### A failed import keeps its temporary files
+
+A restore that fails after the import has started now leaves the downloaded archive and the
+extracted dump in `storage/app/backup-restore-temp` (by default — the path comes from
+`filesystems.disks.local.root`). Earlier versions deleted them on every failure. The database holds
+a partial restore at that point and the extracted dump is the only local copy of what was going
+into it, so re-running the restore does not have to download the backup again. Delete the directory
+by hand once you no longer need it — the dump is plaintext.
+
+A failure before the database was touched still cleans up, and `--keep` is unchanged.
+
+### `DecompressBackupAction::execute()` and `ImportDumpAction::execute()` take a second parameter
+
+Both now take `?RestoreAbort $abort = null`, which is how an interrupted restore stops part-way
+through:
+
+```php
+// Before
+public function execute(PendingRestore $pendingRestore): void
+
+// Now
+public function execute(PendingRestore $pendingRestore, ?RestoreAbort $abort = null): void
+```
+
+A subclass that overrides `execute()` with the old single-parameter signature is a fatal error: PHP
+requires an override to accept at least the parameters of the method it replaces. Add the parameter
+to your override; you can ignore it.
+
+The importers were deliberately left alone for the same reason — `getImportCommand()`,
+`importFromFile()` and `importToDatabase()` keep their signatures. They carry the token as a
+property, set through `abortWith(?RestoreAbort $abort)`.

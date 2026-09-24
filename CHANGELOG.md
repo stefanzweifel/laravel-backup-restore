@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.9.7...HEAD)
 
+### Added
+
+- Handle `SIGINT`, `SIGTERM` and `SIGHUP` during a restore. The running database import is stopped, the temporary files are cleaned up, and a `RestoreAborted` event is dispatched. Without this a signal killed the process outright and left the downloaded archive, the extracted plaintext `db-dumps` directory and the MySQL credentials file on disk.
+- `backup:restore` exits with `128 + signal` when it is interrupted: `129` for `SIGHUP`, `130` for `SIGINT` and `143` for `SIGTERM`.
+
 ## [v1.9.7](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.9.6...v1.9.7) - 2026-09-21
 
 ### Fixed
