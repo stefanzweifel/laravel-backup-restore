@@ -38,9 +38,14 @@ it('uses the configured binary path', function () {
 })->group('pgsql');
 
 it('does not put the password in the command', function () {
-    config()->set('database.connections.pgsql-restore.password', 'secret-password');
+    // A connection of its own. Overriding the password on one of the connections
+    // the suite wipes would make the afterEach hook connect with a wrong password.
+    config()->set('database.connections.pgsql-password', array_merge(
+        config('database.connections.pgsql-restore'),
+        ['password' => 'secret-password'],
+    ));
 
-    $command = app(PostgreSql::class)->getImportCommand('irrelevant.sql', 'pgsql-restore');
+    $command = app(PostgreSql::class)->getImportCommand('irrelevant.sql', 'pgsql-password');
 
     expect($command)->not->toContain('secret-password');
 })->group('pgsql');

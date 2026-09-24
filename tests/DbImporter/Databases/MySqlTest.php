@@ -17,7 +17,7 @@ it('builds the import command as an array', function () {
 it('prefixes the binary with the configured path', function () {
     $command = MySql::create()->setDbName('laravel')->setImportBinaryPath('/usr/bin')->getImportCommand();
 
-    expect($command[0])->toBe('/usr/bin/mysql');
+    expect($command[0])->toBe('/usr/bin'.DIRECTORY_SEPARATOR.'mysql');
 });
 
 it('writes the credentials to an option file instead of the command', function () {
