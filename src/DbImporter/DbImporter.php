@@ -170,6 +170,14 @@ abstract class DbImporter
 
             throw ImportFailed::timedOut($this->timeout);
         } catch (SymfonyProcessException $exception) {
+            // A child killed by the stopper comes back here too: Symfony reports
+            // a signalled child that it did not signal itself as a RuntimeException.
+            if ($this->abort?->wasRequested()) {
+                $process->stop(0);
+
+                throw ImportAborted::bySignal($this->abort->signal() ?? 0);
+            }
+
             // proc_open refused to start the process at all. The usual cause is
             // a binary that is not on PATH, which is how a missing client
             // surfaces on Windows; on Linux it comes back as exit code 127.

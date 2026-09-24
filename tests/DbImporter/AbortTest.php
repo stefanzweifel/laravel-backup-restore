@@ -83,3 +83,36 @@ it('imports normally when no abort was requested', function () {
 
     expect(DB::connection('sqlite')->table('users')->count())->toBe(10);
 });
+
+it('reports a killed CLI import as aborted', function () {
+    $abort = new RestoreAbort;
+
+    // SELECT SLEEP() keeps the mysql client busy long enough for the alarm to
+    // land while the child is still running, so the stopper kills a live
+    // process instead of racing a finished one.
+    $dump = tempnam(sys_get_temp_dir(), 'lbr-abort-').'.sql';
+    file_put_contents($dump, "SELECT SLEEP(5);\nSELECT SLEEP(5);\n");
+
+    $asyncSignalsWereOn = pcntl_async_signals();
+    pcntl_async_signals(true);
+    pcntl_signal(SIGALRM, function () use ($abort): void {
+        $abort->requestAbort(SIGTERM);
+    });
+    pcntl_alarm(1);
+
+    try {
+        // The child dies of the signal the stopper sent it, which Symfony
+        // reports as a RuntimeException out of wait(). That must not be
+        // mistaken for a binary that could not be started.
+        expect(fn () => mysqlImporter()->abortWith($abort)->importFromFile($dump))
+            ->toThrow(ImportAborted::class);
+    } finally {
+        pcntl_alarm(0);
+        pcntl_signal(SIGALRM, SIG_DFL);
+        pcntl_async_signals($asyncSignalsWereOn);
+        unlink($dump);
+    }
+})->skip(
+    fn () => ! extension_loaded('pcntl') || ! extension_loaded('posix'),
+    'Requires ext-pcntl and ext-posix.'
+);
