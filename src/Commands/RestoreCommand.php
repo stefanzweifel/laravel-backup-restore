@@ -7,6 +7,7 @@ namespace Wnx\LaravelBackupRestore\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laravel\Prompts\Prompt;
@@ -64,7 +65,9 @@ class RestoreCommand extends Command
         $startedRestore = null;
 
         try {
-            $connection = $this->option('connection') ?? config('backup.backup.source.databases')[0];
+            $connectionOption = $this->option('connection')
+                ?? Arr::first(Config::array('backup.backup.source.databases'));
+            $connection = is_string($connectionOption) ? $connectionOption : '';
 
             // Before anything is downloaded: a missing database client is worth
             // knowing about now rather than after a multi-gigabyte download.
@@ -162,7 +165,10 @@ class RestoreCommand extends Command
             return $disk;
         }
 
-        $availableDestinations = config('backup.backup.destination.disks');
+        $availableDestinations = array_values(array_filter(
+            Config::array('backup.backup.destination.disks'),
+            is_string(...)
+        ));
 
         // If there is only one disk configured, use it
         if (count($availableDestinations) === 1) {
@@ -173,7 +179,7 @@ class RestoreCommand extends Command
         return (string) select(
             'From which disk should the backup be restored?',
             $availableDestinations,
-            head($availableDestinations)
+            $availableDestinations[0] ?? null
         );
     }
 
@@ -188,7 +194,7 @@ class RestoreCommand extends Command
             return $backup;
         }
 
-        $name = config('backup.backup.name');
+        $name = Config::string('backup.backup.name');
 
         info("Fetch list of backups from $disk …");
         $listOfBackups = collect(Storage::disk($disk)->allFiles($name))
@@ -235,7 +241,7 @@ class RestoreCommand extends Command
             $password = password('What is the password to decrypt the backup? (leave empty if not encrypted)');
         }
 
-        return $password;
+        return is_string($password) ? $password : null;
     }
 
     /**
@@ -274,11 +280,21 @@ class RestoreCommand extends Command
     private function confirmRestoreProcess(PendingRestore $pendingRestore): bool
     {
         $connectionConfig = config("database.connections.{$pendingRestore->connection}");
-        $connectionInformationForConfirmation = collect([
-            'Database' => Arr::get($connectionConfig, 'database'),
-            'Host' => Arr::get($connectionConfig, 'host'),
-            'username' => Arr::get($connectionConfig, 'username'),
-        ])->filter()->map(fn ($value, $key) => "{$key}: {$value}")->implode(', ');
+        $connectionConfig = is_array($connectionConfig) ? $connectionConfig : [];
+
+        $connectionInformation = [];
+
+        foreach (['Database' => 'database', 'Host' => 'host', 'username' => 'username'] as $label => $key) {
+            $value = Arr::get($connectionConfig, $key);
+
+            if (! is_scalar($value) || ! $value) {
+                continue;
+            }
+
+            $connectionInformation[] = "{$label}: {$value}";
+        }
+
+        $connectionInformationForConfirmation = implode(', ', $connectionInformation);
 
         $label = sprintf(
             'Proceed to restore "%s" using the "%s" database connection. (%s)',

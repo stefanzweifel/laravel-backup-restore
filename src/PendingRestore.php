@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Wnx\LaravelBackupRestore;
 
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use SensitiveParameter;
@@ -65,7 +66,7 @@ class PendingRestore
     public function getAbsolutePathToLocalDecompressedBackup(): string
     {
         $filename = $this->restoreId;
-        $root = config('filesystems.disks.local.root');
+        $root = Config::string('filesystems.disks.local.root');
 
         return $root.DIRECTORY_SEPARATOR.'backup-restore-temp'.DIRECTORY_SEPARATOR.$filename;
     }
@@ -93,7 +94,7 @@ class PendingRestore
      */
     public function getAvailableDbDumps(): Collection
     {
-        $backupDatabaseDumpFileExtension = config('backup.backup.database_dump_file_extension', 'sql');
+        $backupDatabaseDumpFileExtension = Config::string('backup.backup.database_dump_file_extension', 'sql');
         $backupDatabaseDumpFileExtensionWithLeadingDot = ".{$backupDatabaseDumpFileExtension}";
 
         return $this->getAvailableFilesInDbDumpsDirectory()
