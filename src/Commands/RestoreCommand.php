@@ -156,8 +156,10 @@ class RestoreCommand extends Command
     private function getDestinationDiskToRestoreFrom(): string
     {
         // Use disk from --disk option if provided
-        if ($this->option('disk')) {
-            return $this->option('disk');
+        $disk = $this->option('disk');
+
+        if (is_string($disk) && $disk !== '') {
+            return $disk;
         }
 
         $availableDestinations = config('backup.backup.destination.disks');
@@ -168,7 +170,7 @@ class RestoreCommand extends Command
         }
 
         // Ask user to choose a disk
-        return select(
+        return (string) select(
             'From which disk should the backup be restored?',
             $availableDestinations,
             head($availableDestinations)
@@ -180,8 +182,10 @@ class RestoreCommand extends Command
      */
     private function getBackupToRestore(string $disk): string
     {
-        if ($this->option('backup') && $this->option('backup') !== 'latest') {
-            return $this->option('backup');
+        $backup = $this->option('backup');
+
+        if (is_string($backup) && $backup !== '' && $backup !== 'latest') {
+            return $backup;
         }
 
         $name = config('backup.backup.name');
@@ -208,7 +212,7 @@ class RestoreCommand extends Command
             60
         );
 
-        return select(
+        return (string) select(
             label: 'Which backup should be restored?',
             options: $this->getBackupOptions($backups, $labelLength)->all(),
             default: $backups->last()['path'],

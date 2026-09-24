@@ -15,9 +15,9 @@ class ImportFailed extends Exception implements BackupRestoreException
      * Captured process output is truncated to this many bytes before it is
      * stored. A failing psql can emit megabytes.
      */
-    protected const MAX_CAPTURED_OUTPUT_BYTES = 4096;
+    protected const int MAX_CAPTURED_OUTPUT_BYTES = 4096;
 
-    protected const HINT_LINES = 20;
+    protected const int HINT_LINES = 20;
 
     protected function __construct(
         public readonly ?int $exitCode,
