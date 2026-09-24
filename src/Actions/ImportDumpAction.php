@@ -10,7 +10,9 @@ use Wnx\LaravelBackupRestore\Events\DatabaseRestored;
 use Wnx\LaravelBackupRestore\Exceptions\CannotCreateDbImporter;
 use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 use Wnx\LaravelBackupRestore\Exceptions\NoDatabaseDumpsFound;
+use Wnx\LaravelBackupRestore\Exceptions\RestoreWasAborted;
 use Wnx\LaravelBackupRestore\PendingRestore;
+use Wnx\LaravelBackupRestore\RestoreAbort;
 
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\spin;
@@ -21,8 +23,9 @@ class ImportDumpAction
      * @throws NoDatabaseDumpsFound
      * @throws CannotCreateDbImporter
      * @throws ImportFailed
+     * @throws RestoreWasAborted
      */
-    public function execute(PendingRestore $pendingRestore): void
+    public function execute(PendingRestore $pendingRestore, ?RestoreAbort $abort = null): void
     {
         $dbDumps = $pendingRestore->getAvailableDbDumps();
 
@@ -30,11 +33,18 @@ class ImportDumpAction
             throw NoDatabaseDumpsFound::notFoundInBackup($pendingRestore);
         }
 
-        $importer = DbImporterFactory::createFromConnection($pendingRestore->connection);
+        $importer = DbImporterFactory::createFromConnection($pendingRestore->connection)
+            ->abortWith($abort);
 
         info('Importing database '.str('dump')->plural($dbDumps)->__toString().' …');
 
-        $dbDumps->each(function ($dbDump) use ($pendingRestore, $importer) {
+        $dbDumps->each(function ($dbDump) use ($pendingRestore, $importer, $abort) {
+            // Between two dumps of a multi-database backup. The dump that was
+            // already imported stays imported; the database is partial either way.
+            if ($abort?->wasRequested()) {
+                throw RestoreWasAborted::bySignal($abort->signal() ?? 0, databaseWasTouched: true);
+            }
+
             spin(function () use ($importer, $dbDump, $pendingRestore) {
                 $absolutePathToDump = Storage::disk($pendingRestore->restoreDisk)->path($dbDump);
                 $importer->importToDatabase($absolutePathToDump, $pendingRestore->connection);
