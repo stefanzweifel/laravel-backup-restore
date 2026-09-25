@@ -86,3 +86,9 @@ it('shortens a long statement in the error message', function () {
         unlink($dump);
     }
 });
+
+it('does not check the abort token when none was set', function () {
+    sqliteImporter()->importFromFile(lbrFixture('2023-02-28-sqlite-no-compression-no-encryption.sql'));
+
+    expect(DB::connection('sqlite')->table('users')->count())->toBe(10);
+});

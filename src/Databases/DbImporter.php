@@ -9,11 +9,14 @@ use Illuminate\Support\Facades\Process;
 use Wnx\LaravelBackupRestore\DbImporter\DbImporter as FrameworkAgnosticDbImporter;
 use Wnx\LaravelBackupRestore\DbImporter\Exceptions\CannotStartImport;
 use Wnx\LaravelBackupRestore\DbImporter\Exceptions\DumpContainsMetaCommand;
+use Wnx\LaravelBackupRestore\DbImporter\Exceptions\ImportAborted;
 use Wnx\LaravelBackupRestore\DbImporter\Exceptions\ImportFailed as ImporterFailed;
 use Wnx\LaravelBackupRestore\DbImporterFactory;
 use Wnx\LaravelBackupRestore\Events\DatabaseDumpImportWasSuccessful;
 use Wnx\LaravelBackupRestore\Exceptions\CannotCreateDbImporter;
 use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
+use Wnx\LaravelBackupRestore\Exceptions\RestoreWasAborted;
+use Wnx\LaravelBackupRestore\RestoreAbort;
 
 /**
  * @deprecated Use Wnx\LaravelBackupRestore\DbImporter\DbImporter. This class is
@@ -25,6 +28,8 @@ use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 abstract class DbImporter
 {
     protected string $dumpBinaryPath = '';
+
+    protected ?RestoreAbort $abort = null;
 
     /**
      * @deprecated Commands are no longer built as shell strings. The importers
@@ -38,14 +43,34 @@ abstract class DbImporter
     abstract public function getCliName(): string;
 
     /**
-     * @throws ImportFailed
+     * Lets the caller stop this import part-way through. A class of your own that
+     * builds a command string cannot be interrupted; the token only reaches the
+     * importers that forward to Wnx\LaravelBackupRestore\DbImporter.
+     */
+    public function abortWith(?RestoreAbort $abort): static
+    {
+        $this->abort = $abort;
+
+        return $this;
+    }
+
+    /**
+     * @throws ImportFailed|RestoreWasAborted
      */
     public function importToDatabase(string $dumpFile, string $connection): void
     {
         if ($this->forwardsToDbImporter()) {
             try {
-                $this->resolveImporter($connection)->importFromFile($dumpFile);
+                $this->resolveImporter($connection)
+                    ->abortWith($this->abort)
+                    ->importFromFile($dumpFile);
+            } catch (ImportAborted $exception) {
+                throw RestoreWasAborted::bySignal($exception->signal, databaseWasTouched: true, previous: $exception);
             } catch (ImporterFailed|CannotStartImport|DumpContainsMetaCommand $exception) {
+                if ($this->abort?->wasRequested()) {
+                    throw RestoreWasAborted::bySignal($this->abort->signal() ?? 0, databaseWasTouched: true, previous: $exception);
+                }
+
                 throw ImportFailed::fromImporter($exception, $dumpFile);
             }
 

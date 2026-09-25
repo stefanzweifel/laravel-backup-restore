@@ -6,7 +6,9 @@ use Illuminate\Support\Facades\Storage;
 use Wnx\LaravelBackupRestore\Actions\DecompressBackupAction;
 use Wnx\LaravelBackupRestore\Actions\DownloadBackupAction;
 use Wnx\LaravelBackupRestore\Exceptions\DecompressionFailed;
+use Wnx\LaravelBackupRestore\Exceptions\RestoreWasAborted;
 use Wnx\LaravelBackupRestore\PendingRestore;
+use Wnx\LaravelBackupRestore\RestoreAbort;
 
 it('decompresses zip backup file without password', function () {
     $pendingRestore = PendingRestore::make(
@@ -184,3 +186,38 @@ it('extracts files that only the owner can read', function () {
     expect(substr(sprintf('%o', fileperms($absolutePathToDump)), -4))->toBe('0600')
         ->and(substr(sprintf('%o', fileperms(dirname($absolutePathToDump))), -4))->toBe('0700');
 })->skipOnWindows();
+
+it('stops extracting when the abort is requested', function () {
+    $pendingRestore = PendingRestore::make(
+        disk: 'local',
+        backup: 'backup.zip',
+        connection: 'sqlite',
+    );
+
+    putCraftedArchive($pendingRestore, function (ZipArchive $zip) {
+        $zip->addFromString('db-dumps/first.sql', 'SELECT 1;');
+        $zip->addFromString('db-dumps/second.sql', 'SELECT 2;');
+    });
+
+    $abort = new RestoreAbort;
+    $abort->requestAbort(2);
+
+    expect(fn () => (new DecompressBackupAction)->execute($pendingRestore, $abort))
+        ->toThrow(RestoreWasAborted::class);
+});
+
+it('extracts normally when no abort was requested', function () {
+    $pendingRestore = PendingRestore::make(
+        disk: 'local',
+        backup: 'backup.zip',
+        connection: 'sqlite',
+    );
+
+    putCraftedArchive($pendingRestore, function (ZipArchive $zip) {
+        $zip->addFromString('db-dumps/first.sql', 'SELECT 1;');
+    });
+
+    (new DecompressBackupAction)->execute($pendingRestore, new RestoreAbort);
+
+    expect($pendingRestore->getAvailableDbDumps())->toHaveCount(1);
+});

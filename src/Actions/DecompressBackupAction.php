@@ -6,7 +6,9 @@ namespace Wnx\LaravelBackupRestore\Actions;
 
 use Illuminate\Support\Facades\Storage;
 use Wnx\LaravelBackupRestore\Exceptions\DecompressionFailed;
+use Wnx\LaravelBackupRestore\Exceptions\RestoreWasAborted;
 use Wnx\LaravelBackupRestore\PendingRestore;
+use Wnx\LaravelBackupRestore\RestoreAbort;
 use ZipArchive;
 
 use function Laravel\Prompts\info;
@@ -32,8 +34,9 @@ class DecompressBackupAction
 
     /**
      * @throws DecompressionFailed
+     * @throws RestoreWasAborted
      */
-    public function execute(PendingRestore $pendingRestore): void
+    public function execute(PendingRestore $pendingRestore, ?RestoreAbort $abort = null): void
     {
         $extractTo = $pendingRestore->getAbsolutePathToLocalDecompressedBackup();
 
@@ -59,9 +62,9 @@ class DecompressBackupAction
             throw $exception;
         }
 
-        spin(function () use ($pathToFileToDecompress, $extractTo, $zip) {
+        spin(function () use ($pathToFileToDecompress, $extractTo, $zip, $abort) {
             try {
-                $this->extract($zip, $extractTo, $pathToFileToDecompress);
+                $this->extract($zip, $extractTo, $pathToFileToDecompress, $abort);
             } finally {
                 $zip->close();
             }
@@ -114,10 +117,13 @@ class DecompressBackupAction
      * file, which extractTo() has no way to avoid.
      *
      * @throws DecompressionFailed
+     * @throws RestoreWasAborted
      */
-    private function extract(ZipArchive $zip, string $extractTo, string $archivePath): void
+    private function extract(ZipArchive $zip, string $extractTo, string $archivePath, ?RestoreAbort $abort = null): void
     {
         for ($i = 0; $i < $zip->numFiles; $i++) {
+            $this->guardAgainstAbort($abort);
+
             $entryName = $zip->getNameIndex($i);
 
             if ($entryName === false) {
@@ -134,14 +140,15 @@ class DecompressBackupAction
             }
 
             $this->makeDirectory(dirname($target), $archivePath);
-            $this->writeEntry($zip, $i, $target, $archivePath);
+            $this->writeEntry($zip, $i, $target, $archivePath, $abort);
         }
     }
 
     /**
      * @throws DecompressionFailed
+     * @throws RestoreWasAborted
      */
-    private function writeEntry(ZipArchive $zip, int $index, string $target, string $archivePath): void
+    private function writeEntry(ZipArchive $zip, int $index, string $target, string $archivePath, ?RestoreAbort $abort = null): void
     {
         // Returns false for an encrypted entry when no or the wrong password was
         // set, and raises a warning while doing so.
@@ -165,6 +172,8 @@ class DecompressBackupAction
 
         try {
             while (! feof($source)) {
+                $this->guardAgainstAbort($abort);
+
                 $chunk = fread($source, self::COPY_CHUNK_SIZE);
 
                 if ($chunk === false) {
@@ -178,6 +187,18 @@ class DecompressBackupAction
         } finally {
             fclose($source);
             fclose($destination);
+        }
+    }
+
+    /**
+     * @throws RestoreWasAborted
+     */
+    private function guardAgainstAbort(?RestoreAbort $abort): void
+    {
+        if ($abort?->wasRequested()) {
+            // Nothing has touched the database at this point, so the caller is
+            // free to delete what was extracted so far.
+            throw RestoreWasAborted::bySignal($abort->signal() ?? 0, databaseWasTouched: false);
         }
     }
 

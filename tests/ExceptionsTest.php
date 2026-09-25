@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
+use Wnx\LaravelBackupRestore\DbImporter\Exceptions\ImportAborted;
 use Wnx\LaravelBackupRestore\Exceptions\BackupRestoreException;
 use Wnx\LaravelBackupRestore\Exceptions\CannotCreateDbImporter;
 use Wnx\LaravelBackupRestore\Exceptions\CliNotFound;
@@ -11,6 +12,7 @@ use Wnx\LaravelBackupRestore\Exceptions\DecompressionFailed;
 use Wnx\LaravelBackupRestore\Exceptions\ImportFailed;
 use Wnx\LaravelBackupRestore\Exceptions\NoBackupsFound;
 use Wnx\LaravelBackupRestore\Exceptions\NoDatabaseDumpsFound;
+use Wnx\LaravelBackupRestore\Exceptions\RestoreWasAborted;
 use Wnx\LaravelBackupRestore\PendingRestore;
 
 function pendingRestoreForException(): PendingRestore
@@ -179,4 +181,49 @@ it('keeps only the last 20 lines of stderr in the ImportFailed hint', function (
     expect($exception->hint())->toContain('line 50')
         ->and($exception->hint())->toContain('line 31')
         ->and($exception->hint())->not->toContain('line 30');
+});
+
+it('reports the signal and the database state on an aborted restore', function () {
+    $exception = RestoreWasAborted::bySignal(15, databaseWasTouched: true);
+
+    expect($exception->signal)->toBe(15);
+    expect($exception->databaseWasTouched)->toBeTrue();
+    expect($exception)->toBeInstanceOf(BackupRestoreException::class);
+    expect($exception->getMessage())->toContain('SIGTERM');
+});
+
+it('names an unknown signal by its number', function () {
+    $exception = RestoreWasAborted::bySignal(99, databaseWasTouched: false);
+
+    expect($exception->getMessage())->toContain('99');
+});
+
+it('turns a signal into the conventional exit code', function (int $signal, int $exitCode) {
+    expect(RestoreWasAborted::bySignal($signal, databaseWasTouched: false)->exitCode())
+        ->toBe($exitCode);
+})->with([
+    [1, 129],
+    [2, 130],
+    [15, 143],
+]);
+
+it('hints at re-running the restore when the database was touched', function () {
+    expect(RestoreWasAborted::bySignal(2, databaseWasTouched: true)->hint())
+        ->toContain('partial');
+
+    expect(RestoreWasAborted::bySignal(2, databaseWasTouched: false)->hint())
+        ->not->toContain('partial');
+});
+
+it('says nothing about the local files, which depend on --keep', function () {
+    // Only RestoreCommand knows whether --keep was given, so the hint stays out
+    // of it rather than guessing.
+    expect(RestoreWasAborted::bySignal(2, databaseWasTouched: true)->hint())
+        ->not->toContain('files')
+        ->and(RestoreWasAborted::bySignal(2, databaseWasTouched: false)->hint())
+        ->not->toContain('files');
+});
+
+it('carries the signal on an aborted import', function () {
+    expect(ImportAborted::bySignal(15)->signal)->toBe(15);
 });
