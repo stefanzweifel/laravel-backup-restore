@@ -61,7 +61,7 @@ class RestoreWasAborted extends Exception implements BackupRestoreException
     public function hint(): ?string
     {
         if ($this->databaseWasTouched) {
-            return 'The database holds a partial restore. Re-run the restore to finish it.';
+            return 'The database holds a partial restore. Re-run the command to start over.';
         }
 
         return 'The database was not touched.';

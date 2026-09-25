@@ -258,7 +258,7 @@ class RestoreCommand extends Command
     private function describeLocalFiles(bool $databaseWasTouched): string
     {
         if ($databaseWasTouched) {
-            return 'The downloaded files were kept so the restore can be re-run without downloading the backup again.';
+            return 'The downloaded files were kept so you can inspect the dump or finish the import by hand.';
         }
 
         if ($this->option('keep')) {

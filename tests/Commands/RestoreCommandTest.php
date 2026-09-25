@@ -449,7 +449,7 @@ it('keeps the temporary files when the abort came after the import started', fun
     ])
         ->expectsQuestion(lbrConfirmation(), true)
         ->expectsOutputToContain('The database holds a partial restore.')
-        ->expectsOutputToContain('The downloaded files were kept so the restore can be re-run')
+        ->expectsOutputToContain('The downloaded files were kept so you can inspect the dump')
         ->assertExitCode(143);
 
     expect(Storage::disk('local')->allFiles('backup-restore-temp'))->not->toBeEmpty();
@@ -519,7 +519,7 @@ it('reports the files as kept when --keep meets a touched database', function ()
     ])
         ->expectsQuestion(lbrConfirmation(), true)
         ->expectsOutputToContain('The database holds a partial restore.')
-        ->expectsOutputToContain('The downloaded files were kept so the restore can be re-run')
+        ->expectsOutputToContain('The downloaded files were kept so you can inspect the dump')
         ->assertExitCode(143);
 
     expect(Storage::disk('local')->allFiles('backup-restore-temp'))->not->toBeEmpty();

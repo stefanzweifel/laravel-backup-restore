@@ -270,12 +270,12 @@ Each exception also carries the relevant facts as readonly properties, so you do
 
 The command traps `SIGTERM` (`docker stop`, a Kubernetes pod shutdown, systemd) and `SIGHUP` (a closed SSH session). On either of them it stops the running import, cleans up, and exits with `128 + signal` — `143` for `SIGTERM`, `129` for `SIGHUP`.
 
-Ctrl-C is not covered while a spinner is on screen, and a spinner runs during the download, the decompression and the import — most of a restore. `Laravel\Prompts` installs its own `SIGINT` handler for the duration of every spinner, and that handler exits straight away: the import isn't stopped, nothing is cleaned up, no `RestoreAborted` event is dispatched, and the exit code is `0` even though the restore never finished. This isn't new, it has always behaved that way, and it doesn't affect `SIGTERM` or `SIGHUP`. To stop a restore that is already running, send it `SIGTERM` (`kill <pid>`).
+Ctrl-C does not work during the download, the decompression or the import. `Laravel\Prompts` shows a spinner in all three, and it installs its own `SIGINT` handler that exits immediately. Nothing is cleaned up, no `RestoreAborted` event fires, and the exit code is `0`. Use `kill <pid>` to stop a running restore.
 
 What happens to the downloaded files depends on how far the restore had got:
 
 - **Before the database was touched** — the downloaded archive and the extracted dump are deleted, the same as after a normal run. Nothing was changed in the target database.
-- **After `--reset` or the import started, with the import unfinished** — the files are kept. The database holds a partial restore at that point, and the extracted dump is the only local copy of what was going into it, so re-running the restore doesn't have to download the backup again. They stay in `storage/app/backup-restore-temp` by default, wherever `filesystems.disks.local.root` points.
+- **After `--reset` or the import started, with the import unfinished** — the files are kept, so you can look at the dump or import it by hand. The database holds a partial restore at that point. They stay in `storage/app/backup-restore-temp` by default, wherever `filesystems.disks.local.root` points. Re-running `backup:restore` ignores them and downloads the backup again, so delete them once you're done — the dump is plaintext.
 
 The same rule applies to a plain failure: an import that fails part-way through now leaves its files behind, where earlier versions always deleted them.
 

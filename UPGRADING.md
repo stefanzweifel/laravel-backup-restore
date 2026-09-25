@@ -117,9 +117,9 @@ which only search the `PATH` the binary is not on.
 A restore that fails after the import has started now leaves the downloaded archive and the
 extracted dump in `storage/app/backup-restore-temp` (by default — the path comes from
 `filesystems.disks.local.root`). Earlier versions deleted them on every failure. The database holds
-a partial restore at that point and the extracted dump is the only local copy of what was going
-into it, so re-running the restore does not have to download the backup again. Delete the directory
-by hand once you no longer need it — the dump is plaintext.
+a partial restore at that point, and the files are kept so you can look at the dump or import it by
+hand. Re-running the command ignores them and downloads the backup again. Delete the directory by
+hand once you no longer need it — the dump is plaintext.
 
 A failure before the database was touched still cleans up, and `--keep` is unchanged.
 
