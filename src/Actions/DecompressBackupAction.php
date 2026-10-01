@@ -94,6 +94,13 @@ class DecompressBackupAction
                 continue;
             }
 
+            // Directory entries carry no data. spatie/laravel-backup adds them
+            // with ZipArchive::addEmptyDir() and only calls setEncryptionName()
+            // on files, so they are unencrypted even in an encrypted backup.
+            if (str_ends_with($entryName, '/') || str_ends_with($entryName, '\\')) {
+                continue;
+            }
+
             $stat = $zip->statIndex($i);
 
             // ZIP encryption is per entry, so an archive in which nothing is

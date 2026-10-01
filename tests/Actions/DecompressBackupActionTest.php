@@ -221,3 +221,26 @@ it('extracts normally when no abort was requested', function () {
 
     expect($pendingRestore->getAvailableDbDumps())->toHaveCount(1);
 });
+
+it('accepts an encrypted archive whose directory entries are not encrypted', function () {
+    $pendingRestore = PendingRestore::make(
+        disk: 'local',
+        backup: 'backup.zip',
+        connection: 'sqlite',
+        backupPassword: 'password',
+    );
+
+    // spatie/laravel-backup adds directories with ZipArchive::addEmptyDir() and
+    // only ever calls setEncryptionName() on files, so every directory entry in
+    // an encrypted backup is stored unencrypted.
+    putCraftedArchive($pendingRestore, function (ZipArchive $zip) {
+        $zip->setPassword('password');
+        $zip->addEmptyDir('db-dumps');
+        $zip->addFromString('db-dumps/dump.sql', '-- SQL');
+        $zip->setEncryptionName('db-dumps/dump.sql', ZipArchive::EM_AES_256);
+    });
+
+    (new DecompressBackupAction)->execute($pendingRestore);
+
+    expect($pendingRestore->getAvailableDbDumps())->toHaveCount(1);
+});
