@@ -5,12 +5,32 @@ All notable changes to `laravel-backup-restore` will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.9.7...HEAD)
+## [Unreleased](https://github.com/stefanzweifel/laravel-backup-restore/compare/v2.0.0...HEAD)
 
 ### Added
 
 - Handle `SIGINT`, `SIGTERM` and `SIGHUP` during a restore. The running database import is stopped, the temporary files are cleaned up, and a `RestoreAborted` event is dispatched. Without this a signal killed the process outright and left the downloaded archive, the extracted plaintext `db-dumps` directory and the MySQL credentials file on disk.
 - `backup:restore` exits with `128 + signal` when it is interrupted: `129` for `SIGHUP`, `130` for `SIGINT` and `143` for `SIGTERM`.
+
+## [v2.0.0](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.9.7...v2.0.0) - 2026-10-16
+
+v2 no longer imports dumps through a shell. Before, the package built the import as a command string and ran it through `/bin/sh -c`. It now passes an argument array straight to the database client, so a value in your connection config or a dump's file name can no longer be read as shell syntax. This closes a set of command-injection risks.
+
+Check [UPGRADING.md](https://github.com/stefanzweifel/laravel-backup-restore/blob/main/UPGRADING.md) for details.
+
+### Added
+
+- Add support for Signal Handling ([#132](https://github.com/stefanzweifel/laravel-backup-restore/pull/132))
+- Improve Cross Platform Support ([#126](https://github.com/stefanzweifel/laravel-backup-restore/pull/126))
+- Add SECURITY.md ([#124](https://github.com/stefanzweifel/laravel-backup-restore/pull/124))
+
+### Changed
+
+- Refactor core to import database dumps without a shell ([#127](https://github.com/stefanzweifel/laravel-backup-restore/pull/127))
+- Read SQLite dumps in chunks instead of into memory ([#131](https://github.com/stefanzweifel/laravel-backup-restore/pull/131))
+- Increase PHPStan levels from 5 to 9 ([#130](https://github.com/stefanzweifel/laravel-backup-restore/pull/130))
+- Check for the database client before downloading the backup ([#128](https://github.com/stefanzweifel/laravel-backup-restore/pull/128))
+- Add a pre-flight check before reseting a database, improve Exceptions by adding a hint ([#125](https://github.com/stefanzweifel/laravel-backup-restore/pull/125))
 
 ## [v1.9.7](https://github.com/stefanzweifel/laravel-backup-restore/compare/v1.9.6...v1.9.7) - 2026-09-21
 
