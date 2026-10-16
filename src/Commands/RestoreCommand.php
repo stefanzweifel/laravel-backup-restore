@@ -7,6 +7,7 @@ namespace Wnx\LaravelBackupRestore\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laravel\Prompts\Prompt;
@@ -64,7 +65,9 @@ class RestoreCommand extends Command
         $startedRestore = null;
 
         try {
-            $connection = $this->option('connection') ?? config('backup.backup.source.databases')[0];
+            $connectionOption = $this->option('connection')
+                ?? Arr::first(Config::array('backup.backup.source.databases'));
+            $connection = is_string($connectionOption) ? $connectionOption : '';
 
             // Before anything is downloaded: a missing database client is worth
             // knowing about now rather than after a multi-gigabyte download.
@@ -156,11 +159,16 @@ class RestoreCommand extends Command
     private function getDestinationDiskToRestoreFrom(): string
     {
         // Use disk from --disk option if provided
-        if ($this->option('disk')) {
-            return $this->option('disk');
+        $disk = $this->option('disk');
+
+        if (is_string($disk) && $disk !== '') {
+            return $disk;
         }
 
-        $availableDestinations = config('backup.backup.destination.disks');
+        $availableDestinations = array_values(array_filter(
+            Config::array('backup.backup.destination.disks'),
+            is_string(...)
+        ));
 
         // If there is only one disk configured, use it
         if (count($availableDestinations) === 1) {
@@ -168,10 +176,10 @@ class RestoreCommand extends Command
         }
 
         // Ask user to choose a disk
-        return select(
+        return (string) select(
             'From which disk should the backup be restored?',
             $availableDestinations,
-            head($availableDestinations)
+            $availableDestinations[0] ?? null
         );
     }
 
@@ -180,25 +188,30 @@ class RestoreCommand extends Command
      */
     private function getBackupToRestore(string $disk): string
     {
-        if ($this->option('backup') && $this->option('backup') !== 'latest') {
-            return $this->option('backup');
+        $backup = $this->option('backup');
+
+        if (is_string($backup) && $backup !== '' && $backup !== 'latest') {
+            return $backup;
         }
 
-        $name = config('backup.backup.name');
+        $name = Config::string('backup.backup.name');
 
         info("Fetch list of backups from $disk …");
         $listOfBackups = collect(Storage::disk($disk)->allFiles($name))
-            ->filter(fn ($file) => Str::endsWith($file, '.zip'));
+            ->filter(fn ($file) => Str::endsWith($file, '.zip'))
+            ->values();
 
-        if ($listOfBackups->count() === 0) {
+        $latestBackup = $listOfBackups->last();
+
+        if ($latestBackup === null) {
             throw NoBackupsFound::onDisk($disk, $name);
         }
 
         if ($this->option('backup') === 'latest') {
-            return $listOfBackups->last();
+            return $latestBackup;
         }
 
-        $backups = $listOfBackups->values()->map(fn (string $path): array => [
+        $backups = $listOfBackups->map(fn (string $path): array => [
             'path' => $path,
             'size' => Format::humanReadableSize(Storage::disk($disk)->size($path)),
         ]);
@@ -208,10 +221,10 @@ class RestoreCommand extends Command
             60
         );
 
-        return select(
+        return (string) select(
             label: 'Which backup should be restored?',
             options: $this->getBackupOptions($backups, $labelLength)->all(),
-            default: $backups->last()['path'],
+            default: $latestBackup,
             scroll: 10
         );
     }
@@ -228,7 +241,7 @@ class RestoreCommand extends Command
             $password = password('What is the password to decrypt the backup? (leave empty if not encrypted)');
         }
 
-        return $password;
+        return is_string($password) ? $password : null;
     }
 
     /**
@@ -236,18 +249,25 @@ class RestoreCommand extends Command
      */
     private function runHealthChecks(PendingRestore $pendingRestore): int
     {
-        $failedResults = collect(config('backup-restore.health-checks'))
-            ->each(function ($check) {
-                if (! is_string($check) || ! is_a($check, HealthCheck::class, true)) {
-                    throw InvalidHealthCheck::notAHealthCheck(is_string($check) ? $check : get_debug_type($check));
-                }
-            })
-            ->map(fn (string $check) => $check::new())
-            ->map(fn (HealthCheck $check) => $check->run($pendingRestore))
-            ->filter(fn (Result $result) => $result->status === self::FAILURE);
+        $checks = [];
+
+        foreach (Arr::wrap(config('backup-restore.health-checks')) as $check) {
+            if (! is_string($check) || ! is_a($check, HealthCheck::class, true)) {
+                throw InvalidHealthCheck::notAHealthCheck(is_string($check) ? $check : get_debug_type($check));
+            }
+
+            $checks[] = $check;
+        }
+
+        $failedResults = collect($checks)
+            ->map(fn (string $check): HealthCheck => $check::new())
+            ->map(fn (HealthCheck $check): Result => $check->run($pendingRestore))
+            ->filter(fn (Result $result): bool => $result->status === self::FAILURE);
 
         if ($failedResults->count() > 0) {
-            $failedResults->each(fn (Result $result) => error($result->message));
+            $failedResults->each(fn (Result $result) => error(
+                $result->message ?? class_basename($result->healthCheck).' failed.'
+            ));
 
             return self::FAILURE;
         }
@@ -260,11 +280,21 @@ class RestoreCommand extends Command
     private function confirmRestoreProcess(PendingRestore $pendingRestore): bool
     {
         $connectionConfig = config("database.connections.{$pendingRestore->connection}");
-        $connectionInformationForConfirmation = collect([
-            'Database' => Arr::get($connectionConfig, 'database'),
-            'Host' => Arr::get($connectionConfig, 'host'),
-            'username' => Arr::get($connectionConfig, 'username'),
-        ])->filter()->map(fn ($value, $key) => "{$key}: {$value}")->implode(', ');
+        $connectionConfig = is_array($connectionConfig) ? $connectionConfig : [];
+
+        $connectionInformation = [];
+
+        foreach (['Database' => 'database', 'Host' => 'host', 'username' => 'username'] as $label => $key) {
+            $value = Arr::get($connectionConfig, $key);
+
+            if (! is_scalar($value) || ! $value) {
+                continue;
+            }
+
+            $connectionInformation[] = "{$label}: {$value}";
+        }
+
+        $connectionInformationForConfirmation = implode(', ', $connectionInformation);
 
         $label = sprintf(
             'Proceed to restore "%s" using the "%s" database connection. (%s)',
@@ -282,11 +312,20 @@ class RestoreCommand extends Command
 
     /**
      * @param  Collection<int, array{path: string, size: string}>  $listOfBackups
+     * @return Collection<string, string>
      */
     protected function getBackupOptions(Collection $listOfBackups, int $labelLength): Collection
     {
         return $listOfBackups->mapWithKeys(fn (array $backup): array => [
-            $backup['path'] => str_pad($backup['path'].' ', ($labelLength - strlen($backup['size'])), '.', STR_PAD_RIGHT).' '.$backup['size'],
+            $backup['path'] => $this->getBackupOptionLabel($backup, $labelLength),
         ]);
+    }
+
+    /**
+     * @param  array{path: string, size: string}  $backup
+     */
+    protected function getBackupOptionLabel(array $backup, int $labelLength): string
+    {
+        return str_pad($backup['path'].' ', ($labelLength - strlen($backup['size'])), '.', STR_PAD_RIGHT).' '.$backup['size'];
     }
 }

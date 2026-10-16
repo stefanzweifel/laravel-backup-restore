@@ -88,7 +88,7 @@ class VerifyDumpsAction
 
     protected function readWith(string $open, string $read, string $close, string $path): string|false
     {
-        if (! function_exists($open)) {
+        if (! function_exists($open) || ! function_exists($read) || ! function_exists($close)) {
             return false;
         }
 

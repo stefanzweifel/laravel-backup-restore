@@ -7,6 +7,7 @@ namespace Wnx\LaravelBackupRestore;
 use Closure;
 use Illuminate\Support\Arr;
 use Illuminate\Support\ConfigurationUrlParser;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
 use Wnx\LaravelBackupRestore\Databases\DbImporter;
 use Wnx\LaravelBackupRestore\Databases\MariaDb;
@@ -34,7 +35,7 @@ class DbImporterFactory
     public static function createFromConnection(string $dbConnectionName): DbImporter
     {
         return static::forDriver(
-            (string) (static::configFor($dbConnectionName)['driver'] ?? ''),
+            static::stringFrom(static::configFor($dbConnectionName)['driver'] ?? null),
             static::configFor($dbConnectionName),
         );
     }
@@ -48,7 +49,7 @@ class DbImporterFactory
     public static function importerForConnection(string $dbConnectionName): FrameworkAgnosticDbImporter
     {
         $config = static::configFor($dbConnectionName);
-        $driver = Str::lower((string) ($config['driver'] ?? ''));
+        $driver = Str::lower(static::stringFrom($config['driver'] ?? null));
 
         try {
             $importer = ImporterForDriver::forDriver($driver);
@@ -69,8 +70,8 @@ class DbImporterFactory
         $configured = config('backup-restore.import_binary_path', '');
 
         $path = is_array($configured)
-            ? (string) ($configured[$dbConnectionName] ?? '')
-            : (string) $configured;
+            ? static::stringFrom($configured[$dbConnectionName] ?? null)
+            : static::stringFrom($configured);
 
         if ($path !== '') {
             return $path;
@@ -79,7 +80,7 @@ class DbImporterFactory
         // Deprecated: dump.dump_binary_path is spatie/laravel-backup's path to
         // the dump binaries. It was the only way to point this package at a
         // client before backup-restore.import_binary_path existed.
-        return (string) (config("database.connections.{$dbConnectionName}.dump.dump_binary_path") ?? '');
+        return static::stringFrom(config("database.connections.{$dbConnectionName}.dump.dump_binary_path"));
     }
 
     /**
@@ -105,8 +106,17 @@ class DbImporterFactory
     {
         $config = config("database.connections.$dbConnectionName");
 
-        if ($config === null) {
+        if (! is_array($config) && ! is_string($config)) {
             throw CannotCreateDbImporter::configNotFound($dbConnectionName);
+        }
+
+        if (is_array($config)) {
+            // config() hands back an untyped array. The parser, and everything
+            // that reads the result, index it by name.
+            $config = array_combine(
+                array_map(strval(...), array_keys($config)),
+                $config
+            );
         }
 
         // Resolves a DATABASE_URL-style `url` key the way Laravel itself does.
@@ -154,7 +164,7 @@ class DbImporterFactory
         }
 
         if (! $resolved instanceof DbImporter) {
-            throw CannotCreateDbImporter::unsupportedDriver((string) ($config['driver'] ?? ''));
+            throw CannotCreateDbImporter::unsupportedDriver(static::stringFrom($config['driver'] ?? null));
         }
 
         return $resolved;
@@ -197,7 +207,7 @@ class DbImporterFactory
      */
     protected static function configure(FrameworkAgnosticDbImporter $importer, array $config, string $dbConnectionName): FrameworkAgnosticDbImporter
     {
-        $importer->setDbName((string) ($config['database'] ?? ''));
+        $importer->setDbName(static::stringFrom($config['database'] ?? null));
 
         if ($importer instanceof SqliteImporter) {
             // The database name is the path to the file; there is nothing else.
@@ -205,40 +215,54 @@ class DbImporterFactory
         }
 
         if (filled($config['username'] ?? null)) {
-            $importer->setUserName((string) $config['username']);
+            $importer->setUserName(static::stringFrom($config['username']));
         }
 
         if (filled($config['password'] ?? null)) {
-            $importer->setPassword((string) $config['password']);
+            $importer->setPassword(static::stringFrom($config['password']));
         }
 
         if (filled($config['host'] ?? null)) {
-            $importer->setHost((string) Arr::first(Arr::wrap($config['host'])));
+            $importer->setHost(static::stringFrom(Arr::first(Arr::wrap($config['host']))));
         }
 
         if (filled($config['port'] ?? null)) {
-            $importer->setPort((int) $config['port']);
+            $importer->setPort(static::intFrom($config['port']));
         }
 
         if (filled($config['unix_socket'] ?? null)) {
-            $importer->setSocket((string) $config['unix_socket']);
+            $importer->setSocket(static::stringFrom($config['unix_socket']));
         }
 
         if ($importer instanceof PostgreSqlImporter) {
             if (filled($config['search_path'] ?? null)) {
-                $importer->setSearchPath(implode(',', Arr::wrap($config['search_path'])));
+                $importer->setSearchPath(implode(',', array_map(static::stringFrom(...), Arr::wrap($config['search_path']))));
             }
 
-            $importer->allowMetaCommands((bool) config('backup-restore.allow_psql_meta_commands', false));
+            $importer->allowMetaCommands(Config::boolean('backup-restore.allow_psql_meta_commands', false));
         }
 
         if (filled($binaryPath = static::binaryPathForConnection($dbConnectionName))) {
             $importer->setImportBinaryPath($binaryPath);
         }
 
-        $importer->setExtraOptions(static::parseOptions((string) data_get($config, 'dump.options', '')));
+        $importer->setExtraOptions(static::parseOptions(static::stringFrom(data_get($config, 'dump.options', ''))));
 
         return $importer;
+    }
+
+    /**
+     * Connection config is user-supplied and untyped. Coerce the scalars the
+     * importers need and fall back to the default for anything else.
+     */
+    protected static function stringFrom(mixed $value, string $default = ''): string
+    {
+        return is_scalar($value) ? (string) $value : $default;
+    }
+
+    protected static function intFrom(mixed $value, int $default = 0): int
+    {
+        return is_numeric($value) ? (int) $value : $default;
     }
 
     /**

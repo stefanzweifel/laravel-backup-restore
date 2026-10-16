@@ -211,7 +211,7 @@ class DecompressBackupAction
 
         // Reject ".." segments that would escape the extraction root
         $depth = 0;
-        foreach (preg_split('#[/\\\\]#', $entryName) as $segment) {
+        foreach (explode('/', str_replace('\\', '/', $entryName)) as $segment) {
             if ($segment === '..') {
                 $depth--;
                 if ($depth < 0) {

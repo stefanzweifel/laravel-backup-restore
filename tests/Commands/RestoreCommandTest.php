@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Storage;
 use Wnx\LaravelBackupRestore\Commands\RestoreCommand;
 use Wnx\LaravelBackupRestore\Events\DatabaseReset;
 use Wnx\LaravelBackupRestore\Events\LocalBackupRemoved;
+use Wnx\LaravelBackupRestore\Tests\Support\FailsWithoutMessage;
 
 use function Pest\Laravel\artisan;
 
@@ -302,6 +303,20 @@ it('shows error message if health check after import fails', function () {
     ])
         ->expectsQuestion('Proceed to restore "Laravel/2023-01-28-mysql-no-compression-no-encryption-empty-dump.zip" using the "mysql-restore" database connection. (Database: laravel_backup_restore, Host: 127.0.0.1, username: root)', true)
         ->expectsOutputToContain('Database has not tables after restore.')
+        ->assertFailed();
+});
+
+it('names the health check if it fails without a message', function () {
+    config(['backup-restore.health-checks' => [FailsWithoutMessage::class]]);
+
+    $this->artisan(RestoreCommand::class, [
+        '--disk' => 'remote',
+        '--backup' => 'Laravel/2023-02-28-sqlite-no-compression-no-encryption.zip',
+        '--connection' => 'sqlite-restore',
+        '--no-interaction' => true,
+    ])
+        ->expectsQuestion('Proceed to restore "Laravel/2023-02-28-sqlite-no-compression-no-encryption.zip" using the "sqlite-restore" database connection. (Database: database/database.sqlite)', true)
+        ->expectsOutputToContain('FailsWithoutMessage failed.')
         ->assertFailed();
 });
 

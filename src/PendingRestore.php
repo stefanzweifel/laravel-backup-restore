@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Wnx\LaravelBackupRestore;
 
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use SensitiveParameter;
@@ -23,15 +24,23 @@ class PendingRestore
         //
     }
 
-    public static function make(...$attributes): PendingRestore
-    {
+    public static function make(
+        string $disk,
+        string $backup,
+        string $connection,
+        #[SensitiveParameter] ?string $backupPassword = null,
+        string $restoreDisk = 'local',
+    ): PendingRestore {
         $restoreName = now()->format('Y-m-d-h-i-s').'-'.Str::uuid();
 
-        /** @phpstan-ignore-next-line */
         return new self(
-            ...$attributes,
-            restoreName: $restoreName,
+            disk: $disk,
+            backup: $backup,
+            connection: $connection,
             restoreId: $restoreName,
+            restoreName: $restoreName,
+            backupPassword: $backupPassword,
+            restoreDisk: $restoreDisk,
         );
     }
 
@@ -57,7 +66,7 @@ class PendingRestore
     public function getAbsolutePathToLocalDecompressedBackup(): string
     {
         $filename = $this->restoreId;
-        $root = config('filesystems.disks.local.root');
+        $root = Config::string('filesystems.disks.local.root');
 
         return $root.DIRECTORY_SEPARATOR.'backup-restore-temp'.DIRECTORY_SEPARATOR.$filename;
     }
@@ -69,6 +78,9 @@ class PendingRestore
             ->has($this->getPathToLocalDecompressedBackup().'/db-dumps');
     }
 
+    /**
+     * @return Collection<int, string>
+     */
     public function getAvailableFilesInDbDumpsDirectory(): Collection
     {
         $files = Storage::disk($this->restoreDisk)
@@ -77,9 +89,12 @@ class PendingRestore
         return collect($files);
     }
 
+    /**
+     * @return Collection<int, string>
+     */
     public function getAvailableDbDumps(): Collection
     {
-        $backupDatabaseDumpFileExtension = config('backup.backup.database_dump_file_extension', 'sql');
+        $backupDatabaseDumpFileExtension = Config::string('backup.backup.database_dump_file_extension', 'sql');
         $backupDatabaseDumpFileExtensionWithLeadingDot = ".{$backupDatabaseDumpFileExtension}";
 
         return $this->getAvailableFilesInDbDumpsDirectory()

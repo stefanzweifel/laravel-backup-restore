@@ -18,7 +18,7 @@ class CannotCreateDbImporter extends Exception implements BackupRestoreException
 
     public static function configNotFound(string $connectionName): self
     {
-        return new static(
+        return new self(
             connectionName: $connectionName,
             driver: null,
             message: "Database connection \"{$connectionName}\" is not configured.",
@@ -27,7 +27,7 @@ class CannotCreateDbImporter extends Exception implements BackupRestoreException
 
     public static function unsupportedDriver(string $driver): self
     {
-        return new static(
+        return new self(
             connectionName: null,
             driver: $driver,
             message: "Database driver \"{$driver}\" is not supported.",

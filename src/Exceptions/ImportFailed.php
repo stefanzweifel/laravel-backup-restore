@@ -15,9 +15,9 @@ class ImportFailed extends Exception implements BackupRestoreException
      * Captured process output is truncated to this many bytes before it is
      * stored. A failing psql can emit megabytes.
      */
-    protected const MAX_CAPTURED_OUTPUT_BYTES = 4096;
+    protected const int MAX_CAPTURED_OUTPUT_BYTES = 4096;
 
-    protected const HINT_LINES = 20;
+    protected const int HINT_LINES = 20;
 
     protected function __construct(
         public readonly ?int $exitCode,
@@ -31,7 +31,7 @@ class ImportFailed extends Exception implements BackupRestoreException
         parent::__construct($message, 0, $previous);
     }
 
-    public static function processDidNotEndSuccessfully(ProcessResult $process, ?string $dumpFile = null): static
+    public static function processDidNotEndSuccessfully(ProcessResult $process, ?string $dumpFile = null): self
     {
         $exitCode = $process->exitCode();
 
@@ -41,7 +41,7 @@ class ImportFailed extends Exception implements BackupRestoreException
             ? 'The database import'
             : 'The import of "'.basename($dumpFile).'"';
 
-        return new static(
+        return new self(
             exitCode: $exitCode,
             output: static::truncate($process->output()),
             errorOutput: static::truncate($process->errorOutput()),
@@ -55,11 +55,11 @@ class ImportFailed extends Exception implements BackupRestoreException
      * catch this exception keep working. The original is the previous
      * exception.
      */
-    public static function fromImporter(Throwable $exception, ?string $dumpFile = null): static
+    public static function fromImporter(Throwable $exception, ?string $dumpFile = null): self
     {
         $failedWhileRunning = $exception instanceof ImporterFailed;
 
-        return new static(
+        return new self(
             exitCode: $failedWhileRunning ? $exception->exitCode : null,
             output: $failedWhileRunning ? $exception->output : null,
             errorOutput: $failedWhileRunning ? $exception->errorOutput : null,
@@ -69,9 +69,9 @@ class ImportFailed extends Exception implements BackupRestoreException
         );
     }
 
-    public static function decompressionFailed(string $filename, string $reason): static
+    public static function decompressionFailed(string $filename, string $reason): self
     {
-        return new static(
+        return new self(
             exitCode: null,
             output: null,
             errorOutput: null,
