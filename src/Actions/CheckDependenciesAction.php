@@ -20,9 +20,20 @@ class CheckDependenciesAction
     {
         $databaseCli = DbImporterFactory::createFromConnection($connection)->getCliName();
 
-        $this->checkIfCliExists($databaseCli);
+        // SQLite imports through PDO and needs no binary at all.
+        if ($databaseCli === '') {
+            return;
+        }
 
-        $this->checkIfCliExists('gzip');
+        // The importer prefixes the binary with this path, so that is what has
+        // to exist, not the bare name on PATH.
+        $binaryPath = (string) config("database.connections.{$connection}.dump.dump_binary_path", '');
+
+        if ($binaryPath !== '' && ! str_ends_with($binaryPath, '/') && ! str_ends_with($binaryPath, DIRECTORY_SEPARATOR)) {
+            $binaryPath .= DIRECTORY_SEPARATOR;
+        }
+
+        $this->checkIfCliExists($binaryPath.$databaseCli);
     }
 
     /**

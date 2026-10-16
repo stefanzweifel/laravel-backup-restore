@@ -94,6 +94,15 @@ class TestCase extends Orchestra
             ],
         ]);
 
+        $app['config']->set('database.connections.mariadb', [
+            'driver' => 'mariadb',
+            'host' => env('MYSQL_HOST', '127.0.0.1'),
+            'port' => env('MYSQL_PORT', '3306'),
+            'database' => env('MYSQL_DATABASE', 'laravel_backup_restore'),
+            'username' => env('MYSQL_USERNAME', 'root'),
+            'password' => env('MYSQL_PASSWORD', ''),
+        ]);
+
         $app['config']->set('database.connections.unsupported-driver', [
             'driver' => 'sqlsrv',
         ]);

@@ -16,4 +16,14 @@ return [
     'health-checks' => [
         DatabaseHasTables::class,
     ],
+
+    /**
+     * psql executes backslash meta-commands it reads from a dump, and `\!` runs
+     * a shell command. Dumps are therefore scanned and refused if they contain
+     * a meta-command that pg_dump does not itself emit.
+     *
+     * Set this to true to hand meta-commands to psql anyway. Only do that for
+     * dumps you trust.
+     */
+    'allow_psql_meta_commands' => false,
 ];

@@ -25,30 +25,10 @@ it('imports sqlite dump', function (string $dumpFile) {
     __DIR__.'/../storage/Laravel/2023-02-28-sqlite-compression-no-encryption.sql.bz2',
 ]);
 
-it('throws import failed exception if sqlite dump could not be imported')
-    ->tap(fn () => app(Sqlite::class)->importToDatabase('file-does-not-exist', 'sqlite'))
-    ->throws(ImportFailed::class);
+it('throws import failed exception if sqlite dump could not be imported', function () {
+    app(Sqlite::class)->importToDatabase('file-does-not-exist', 'sqlite');
+})->throws(ImportFailed::class);
 
-it('shell-escapes the dump path in the uncompressed sqlite import command', function () {
-    $maliciousPath = '/tmp/backup.sql;touch /tmp/lbr_security_test;#.sql';
-
-    $command = app(Sqlite::class)->getImportCommand($maliciousPath, 'sqlite');
-
-    expect($command)->toContain(escapeshellarg($maliciousPath));
-});
-
-it('shell-escapes the dump path in the compressed gz sqlite import command', function () {
-    $maliciousPath = '/tmp/backup.sql;touch /tmp/lbr_security_test;#.sql.gz';
-
-    $command = app(Sqlite::class)->getImportCommand($maliciousPath, 'sqlite');
-
-    expect($command)->toContain(escapeshellarg($maliciousPath));
-});
-
-it('shell-escapes the dump path in the compressed bz2 sqlite import command', function () {
-    $maliciousPath = '/tmp/backup.sql;touch /tmp/lbr_security_test;#.sql.bz2';
-
-    $command = app(Sqlite::class)->getImportCommand($maliciousPath, 'sqlite');
-
-    expect($command)->toContain(escapeshellarg($maliciousPath));
+it('runs no command, because sqlite is imported through PDO', function () {
+    expect(app(Sqlite::class)->getImportCommand('irrelevant.sql', 'sqlite'))->toBe('');
 });
