@@ -114,14 +114,70 @@ which only search the `PATH` the binary is not on.
 
 ### A failed import keeps its temporary files
 
-A restore that fails after the import has started now leaves the downloaded archive and the
-extracted dump in `storage/app/backup-restore-temp` (by default — the path comes from
-`filesystems.disks.local.root`). Earlier versions deleted them on every failure. The database holds
-a partial restore at that point, and the files are kept so you can look at the dump or import it by
-hand. Re-running the command ignores them and downloads the backup again. Delete the directory by
-hand once you no longer need it — the dump is plaintext.
+A restore that fails or is interrupted once `--reset` or the import has started now leaves the
+downloaded archive and the extracted dump in `storage/app/backup-restore-temp` (by default — the
+path comes from `filesystems.disks.local.root`). Earlier versions deleted them on every failure.
+The database may hold a partial restore at that point, and the files are kept so you can look at
+the dump or import it by hand. Re-running the command ignores them and downloads the backup again.
+Delete the directory by hand once you no longer need it — the dump is plaintext.
 
-A failure before the database was touched still cleans up, and `--keep` is unchanged.
+The files are still deleted when:
+
+- the restore fails before `--reset` or the import has started (for example on a missing client,
+  an unreadable archive or a dump that fails the pre-reset check),
+- the import finished, even if a health check then fails.
+
+`--keep` is unchanged.
+
+### `backup:restore` handles `SIGINT`, `SIGTERM` and `SIGHUP`
+
+The running import is stopped, the temporary files are handled as described above, and a
+`Wnx\LaravelBackupRestore\Events\RestoreAborted` event is dispatched. The command exits with
+`128 + signal`: `129` for `SIGHUP`, `130` for `SIGINT` and `143` for `SIGTERM`. A second signal ends
+the process immediately.
+
+This needs `ext-pcntl`. Without it (Windows, or a PHP build without the extension) nothing is
+registered and a signal kills the process as before. `SIGINT` is not handled while a spinner is
+running, because `laravel/prompts` installs its own handler for it.
+
+### `backup:restore` no longer throws package exceptions
+
+Exceptions that implement `Wnx\LaravelBackupRestore\Exceptions\BackupRestoreException` (all of the
+package's own, such as `ImportFailed`, `NoBackupsFound` and `CliNotFound`) are caught by the
+command. It prints the message and a hint and returns exit code `1`. Code that wraps
+`Artisan::call('backup:restore')` in a `try`/`catch` will no longer see them; check the return
+value instead.
+
+The exceptions changed as well:
+
+- Constructors are `protected` and the named constructors return `self` instead of `static`.
+- Messages were reworded. `ImportFailed` no longer puts the process output in the message; read
+  `->exitCode`, `->output` and `->errorOutput` instead.
+- Every exception has a `hint()` method.
+
+### `--reset` checks the dumps before it drops tables
+
+With `--reset`, each dump is checked first. An empty dump, or one with no `CREATE TABLE`,
+`INSERT INTO` or `COPY … FROM stdin` statement in its first megabyte, stops the restore with
+`DumpIsNotRestorable` before anything is dropped. Binary `pg_dump` archives and dumps larger than
+1 MB are not inspected.
+
+### The archive is validated and written with tighter permissions
+
+`DecompressBackupAction` now:
+
+- rejects zip entries with absolute paths, null bytes or `..` segments that leave the extraction
+  directory (`DecompressionFailed`),
+- throws if you supply a password but the archive's entries are not AES-encrypted, instead of
+  restoring an archive that is not the expected one,
+- writes the extracted dump with mode `0600`, and the downloaded archive is stored as private.
+
+### New requirements
+
+- `ext-pdo_sqlite` is needed to restore a SQLite dump. It is listed under `suggest`.
+- `ext-pcntl` is optional and enables signal handling.
+- `spatie/temporary-directory` is no longer a dependency of this package. Require it yourself if
+  your application relies on it being installed.
 
 ### `DecompressBackupAction::execute()` and `ImportDumpAction::execute()` take a second parameter
 
@@ -143,3 +199,10 @@ to your override; you can ignore it.
 The importers were deliberately left alone for the same reason — `getImportCommand()`,
 `importFromFile()` and `importToDatabase()` keep their signatures. They carry the token as a
 property, set through `abortWith(?RestoreAbort $abort)`.
+
+### Smaller API changes
+
+- `PendingRestore::make()` takes named, typed parameters (`disk`, `backup`, `connection`,
+  `backupPassword`, `restoreDisk`) instead of `...$attributes`.
+- `ResetDatabaseAction::execute()` has a `void` return type.
+- Paths inside the restore disk always use `/`, also on Windows.
