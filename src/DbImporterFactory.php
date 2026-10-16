@@ -56,7 +56,30 @@ class DbImporterFactory
             throw CannotCreateDbImporter::unsupportedDriver($driver);
         }
 
-        return static::configure($importer, $config);
+        return static::configure($importer, $config, $dbConnectionName);
+    }
+
+    /**
+     * The directory the database client is called from, or an empty string when
+     * it is expected on the PATH. Both the importer and CheckDependenciesAction
+     * read this, so they always agree on which binary has to exist.
+     */
+    public static function binaryPathForConnection(string $dbConnectionName): string
+    {
+        $configured = config('backup-restore.import_binary_path', '');
+
+        $path = is_array($configured)
+            ? (string) ($configured[$dbConnectionName] ?? '')
+            : (string) $configured;
+
+        if ($path !== '') {
+            return $path;
+        }
+
+        // Deprecated: dump.dump_binary_path is spatie/laravel-backup's path to
+        // the dump binaries. It was the only way to point this package at a
+        // client before backup-restore.import_binary_path existed.
+        return (string) (config("database.connections.{$dbConnectionName}.dump.dump_binary_path") ?? '');
     }
 
     /**
@@ -172,7 +195,7 @@ class DbImporterFactory
     /**
      * @param  array<string, mixed>  $config
      */
-    protected static function configure(FrameworkAgnosticDbImporter $importer, array $config): FrameworkAgnosticDbImporter
+    protected static function configure(FrameworkAgnosticDbImporter $importer, array $config, string $dbConnectionName): FrameworkAgnosticDbImporter
     {
         $importer->setDbName((string) ($config['database'] ?? ''));
 
@@ -209,8 +232,8 @@ class DbImporterFactory
             $importer->allowMetaCommands((bool) config('backup-restore.allow_psql_meta_commands', false));
         }
 
-        if (filled($binaryPath = data_get($config, 'dump.dump_binary_path'))) {
-            $importer->setImportBinaryPath((string) $binaryPath);
+        if (filled($binaryPath = static::binaryPathForConnection($dbConnectionName))) {
+            $importer->setImportBinaryPath($binaryPath);
         }
 
         $importer->setExtraOptions(static::parseOptions((string) data_get($config, 'dump.options', '')));

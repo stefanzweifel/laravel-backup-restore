@@ -25,6 +25,6 @@ class CliNotFound extends Exception implements BackupRestoreException
 
     public function hint(): ?string
     {
-        return "Install {$this->cli} and make sure it is on the PATH of the PHP process, or set dump.dump_binary_path on the connection in config/database.php.";
+        return "Install {$this->cli} and make sure it is on the PATH of the PHP process, or set import_binary_path in config/backup-restore.php to the directory it is in.";
     }
 }
