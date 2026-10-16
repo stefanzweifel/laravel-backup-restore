@@ -1,6 +1,6 @@
 # Upgrading
 
-## Unreleased
+## From v1 to v2
 
 ### Database imports no longer go through a shell
 
