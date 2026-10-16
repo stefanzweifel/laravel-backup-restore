@@ -46,6 +46,20 @@ class ImportFailed extends RuntimeException
         );
     }
 
+    /**
+     * The child started and was then killed by a signal nothing in this package
+     * sent. Call it after the process has been stopped, so the exit code is known.
+     */
+    public static function processWasKilled(Process $process, string $reason): self
+    {
+        return new self(
+            "The import process was killed: {$reason}",
+            $process->getExitCode() ?? -1,
+            static::truncate($process->getOutput()),
+            static::truncate($process->getErrorOutput()),
+        );
+    }
+
     public static function timedOut(int $timeout): self
     {
         return new self("The import did not finish within {$timeout} seconds.", -1, '', '');

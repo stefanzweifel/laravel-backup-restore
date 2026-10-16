@@ -7,6 +7,7 @@ namespace Wnx\LaravelBackupRestore\DbImporter\Databases;
 use PDO;
 use PDOException;
 use Wnx\LaravelBackupRestore\DbImporter\DbImporter;
+use Wnx\LaravelBackupRestore\DbImporter\Exceptions\ImportAborted;
 use Wnx\LaravelBackupRestore\DbImporter\Exceptions\ImportFailed;
 use Wnx\LaravelBackupRestore\DbImporter\Support\SqliteStatementReader;
 
@@ -43,6 +44,13 @@ class Sqlite extends DbImporter
 
     protected function runImport(string $dumpFile): void
     {
+        // Before the database file is created by the PDO constructor, and before
+        // the dump is opened. A dump that yields no statements never enters the
+        // loop below, so without this an aborted import would report success.
+        if ($this->abort?->wasRequested()) {
+            throw ImportAborted::bySignal($this->abort->signal() ?? 0);
+        }
+
         try {
             $connection = new PDO('sqlite:'.$this->dbName, options: [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -60,6 +68,12 @@ class Sqlite extends DbImporter
         // before it without effect, because SQLite ignores PRAGMA
         // foreign_keys once a transaction is open.
         foreach ($statements as $statement) {
+            // PDO::exec() blocks in C, so a single very large statement still runs to
+            // completion. Checking here is the finest granularity available.
+            if ($this->abort?->wasRequested()) {
+                throw ImportAborted::bySignal($this->abort->signal() ?? 0);
+            }
+
             $number++;
 
             try {

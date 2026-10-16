@@ -12,7 +12,9 @@ use Wnx\LaravelBackupRestore\DbImporter\Compressors\CompressorFactory;
 use Wnx\LaravelBackupRestore\DbImporter\Exceptions\CannotSetParameter;
 use Wnx\LaravelBackupRestore\DbImporter\Exceptions\CannotStartImport;
 use Wnx\LaravelBackupRestore\DbImporter\Exceptions\DumpContainsMetaCommand;
+use Wnx\LaravelBackupRestore\DbImporter\Exceptions\ImportAborted;
 use Wnx\LaravelBackupRestore\DbImporter\Exceptions\ImportFailed;
+use Wnx\LaravelBackupRestore\RestoreAbort;
 
 /**
  * Imports a database dump.
@@ -53,6 +55,11 @@ abstract class DbImporter
      * @var list<string>
      */
     protected array $temporaryFiles = [];
+
+    /**
+     * Set when the caller wants to be able to interrupt the import.
+     */
+    protected ?RestoreAbort $abort = null;
 
     public static function create(): static
     {
@@ -96,11 +103,22 @@ abstract class DbImporter
     protected function prepareImport(string $dumpFile): void {}
 
     /**
-     * @throws ImportFailed|CannotStartImport
+     * @throws ImportFailed|CannotStartImport|ImportAborted
      */
     protected function runImport(string $dumpFile): void
     {
         $input = $this->getProcessInput($dumpFile);
+
+        // Do not start a child process for an import that is already cancelled. This
+        // also means a stopper is only ever registered while a process can still be
+        // signalled.
+        if ($this->abort?->wasRequested()) {
+            if (is_resource($input)) {
+                fclose($input);
+            }
+
+            throw ImportAborted::bySignal($this->abort->signal() ?? 0);
+        }
 
         $process = new Process(
             command: $this->getImportCommand(),
@@ -110,18 +128,78 @@ abstract class DbImporter
 
         $process->setInput($input);
 
+        // start() and wait() instead of run(), so that the pid is known before the
+        // stopper is registered. The stopper runs inside a signal handler that
+        // interrupted wait(), and nothing Symfony owns may be touched from there:
+        // every Process method that reports on the child (isRunning(), getPid(),
+        // signal(), stop()) goes through updateStatus() -> readPipes() -> the input
+        // writer, which re-enters the generator or the stream the interrupted frame
+        // is already using. Signalling the pid through posix_kill() touches none of
+        // it. The child exits, wait() returns as it would for any other non-zero
+        // exit, and the abort is reported by the caller that owns the token.
+        $releaseStopper = static function (): void {};
+
         try {
-            $process->run();
+            $process->start();
+
+            $pid = $process->getPid();
+
+            $releaseStopper = $this->abort?->whileRunning(function () use ($process, $pid): void {
+                if (! defined('SIGTERM')) {
+                    return;
+                }
+
+                $signal = (int) constant('SIGTERM');
+
+                // No pid means there is nothing to signal. Asking Symfony for one
+                // from in here is not an option: getPid() is on the re-entrant path
+                // described above.
+                if ($pid === null) {
+                    return;
+                }
+
+                if (function_exists('posix_kill')) {
+                    posix_kill($pid, $signal);
+
+                    return;
+                }
+
+                // Without ext-posix there is no way to reach the child except
+                // through Symfony, which is the re-entrant path described above.
+                // Interrupting the import is worth the risk; leaving it running
+                // until it finishes is not.
+                $process->signal($signal);
+            }) ?? $releaseStopper;
+
+            $process->wait();
         } catch (ProcessTimedOutException) {
             $process->stop(0);
 
             throw ImportFailed::timedOut($this->timeout);
         } catch (SymfonyProcessException $exception) {
+            // Whether the child ever ran decides which of the three this is.
+            // ProcessStartFailedException and ProcessSignaledException share this
+            // catch, so the token alone would report an abort for a signal that
+            // arrived while start() was failing for an unrelated reason.
+            $processStarted = $process->isStarted();
+
+            $process->stop(0);
+
+            // A child killed by the stopper comes back here too: Symfony reports
+            // a signalled child that it did not signal itself as a RuntimeException.
+            if ($processStarted && $this->abort?->wasRequested()) {
+                throw ImportAborted::bySignal($this->abort->signal() ?? 0);
+            }
+
+            if ($processStarted) {
+                // The child ran and was then killed by something else — an
+                // out-of-memory killer, or a `kill` against the client.
+                throw ImportFailed::processWasKilled($process, $exception->getMessage());
+            }
+
             // proc_open refused to start the process at all. The usual cause is
             // a binary that is not on PATH, which is how a missing client
             // surfaces on Windows; on Linux it comes back as exit code 127.
-            $process->stop(0);
-
             throw CannotStartImport::binaryCouldNotBeStarted(
                 $this->importBinaryPath.$this->getBinaryName(),
                 $exception->getMessage(),
@@ -131,6 +209,8 @@ abstract class DbImporter
 
             throw $throwable;
         } finally {
+            $releaseStopper();
+
             if (is_resource($input)) {
                 fclose($input);
             }
@@ -271,6 +351,18 @@ abstract class DbImporter
         foreach ($extraOptions as $extraOption) {
             $this->addExtraOption($extraOption);
         }
+
+        return $this;
+    }
+
+    /**
+     * Lets the caller stop this import part-way through. Carried as a property
+     * rather than a parameter on importFromFile() or runImport(), because both are
+     * overridden by subclasses outside this package.
+     */
+    public function abortWith(?RestoreAbort $abort): static
+    {
+        $this->abort = $abort;
 
         return $this;
     }

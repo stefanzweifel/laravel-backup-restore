@@ -160,7 +160,7 @@ Reset the database before restoring the backup. Defaults to `false`.
 Dropping the tables cannot be undone, so the command checks the database dumps in the backup first. If a dump is empty, or holds no `CREATE TABLE`, `INSERT INTO` or `COPY ... FROM stdin` statement, the restore stops before any table is dropped. Dumps larger than 1 MB and dumps in a format that cannot be read as text (a binary `pg_dump`, for example) are not checked.
 
 #### `--keep`
-Keeps the downloaded backup (and the decrypted backup folder) in existence. You need to delete it by hand. Useful for extracting and restoring backuped files. Defaults to `false`.
+Keeps the downloaded backup (and the decrypted backup folder) in existence. You need to delete it by hand. Useful for extracting and restoring backuped files. Defaults to `false`. Both are also kept without this option when a restore is interrupted or fails after the database was touched, see [Interrupting a Restore](#interrupting-a-restore).
 
 ---
 
@@ -229,6 +229,9 @@ Add your health check to the `health-checks`-array in the `config/laravel-backup
 | `0` | The backup was restored and all health checks passed. |
 | `1` | The restore failed, or a health check failed after the import. |
 | `2` | The restore was not confirmed at the prompt. |
+| `129` | The restore was interrupted by SIGHUP, for example because the SSH session ended. |
+| `130` | The restore was interrupted by SIGINT, for example Ctrl-C. Ctrl-C only gets this far outside a spinner, see [Interrupting a Restore](#interrupting-a-restore). |
+| `143` | The restore was interrupted by SIGTERM, for example `docker stop` or a Kubernetes pod shutdown. |
 
 ### Handling Failures
 
@@ -259,14 +262,36 @@ Each exception also carries the relevant facts as readonly properties, so you do
 | `CliNotFound` | The database client was not found before the restore started | `cli` |
 | `ImportFailed` | The import command exited non-zero | `exitCode`, `output`, `errorOutput`, `dumpFile` |
 | `InvalidHealthCheck` | A configured health check is not a `HealthCheck` | `healthCheck`, `configKey` |
+| `RestoreWasAborted` | A terminal signal interrupted the restore | `signal`, `databaseWasTouched` |
 
 `ImportFailed` keeps the last 4 KB of each captured stream. The `backup:restore`-command prints the message and the hint; run it with `-v` to also get the exception class, the stack trace and the full captured stderr.
+
+### Interrupting a Restore
+
+The command traps `SIGTERM` (`docker stop`, a Kubernetes pod shutdown, systemd) and `SIGHUP` (a closed SSH session). On either of them it stops the running import, cleans up, and exits with `128 + signal` — `143` for `SIGTERM`, `129` for `SIGHUP`.
+
+Ctrl-C does not work during the download, the decompression or the import. `Laravel\Prompts` shows a spinner in all three, and it installs its own `SIGINT` handler that exits immediately. Nothing is cleaned up, no `RestoreAborted` event fires, and the exit code is `0`. Use `kill <pid>` to stop a running restore.
+
+What happens to the downloaded files depends on how far the restore had got:
+
+- **Before the database was touched** — the downloaded archive and the extracted dump are deleted, the same as after a normal run. Nothing was changed in the target database.
+- **After `--reset` or the import started, with the import unfinished** — the files are kept, so you can look at the dump or import it by hand. The database holds a partial restore at that point. They stay in `storage/app/backup-restore-temp` by default, wherever `filesystems.disks.local.root` points. Re-running `backup:restore` ignores them and downloads the backup again, so delete them once you're done — the dump is plaintext.
+
+The same rule applies to a plain failure: an import that fails part-way through now leaves its files behind, where earlier versions always deleted them.
+
+`--keep` is honoured either way.
+
+A second signal ends the command at once, without cleaning up. Use it if the first one is taking too long — deleting a large extracted backup is not instant. The archive, the extracted plaintext dump and, for MySQL, the credentials file the import writes into the system temp directory are all left behind; that file holds the database password.
+
+The `mysql` or `psql` child process is sent `SIGTERM` when the restore is interrupted. A client that ignores it keeps running until the command is ended by a second signal, which leaves it orphaned.
 
 ## Limitations
 
 - The package only supports backups created by the [spatie/laravel-backup](https://github.com/spatie/laravel-backup) package.
 - The package does not support restoring files from backups.
 - The package does not support restoring backups from or in a multi-tenant environment.
+- Signal handling needs `ext-pcntl`. Without it — on Windows, or on a build where the extension is missing — a terminal signal kills the process outright: the import is not stopped, and the downloaded archive and the extracted plaintext dump are left in `storage/app/backup-restore-temp` (by default), along with the MySQL credentials file in the system temp directory, which holds the database password.
+- The download cannot be interrupted. A signal that arrives while the backup is being downloaded takes effect once the download finishes.
 
 ## Troubleshooting
 
