@@ -13,6 +13,11 @@ class CannotSetParameter extends InvalidArgumentException
         return new self("`{$name}` must not be negative, got {$value}.");
     }
 
+    public static function mustBeAtLeast(string $name, int $minimum, int $value): self
+    {
+        return new self("`{$name}` must be at least {$minimum}, got {$value}.");
+    }
+
     public static function mustNotBeEmpty(string $name): self
     {
         return new self("`{$name}` must not be an empty string.");

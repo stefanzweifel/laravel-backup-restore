@@ -5,9 +5,10 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\DB;
 
 /**
- * The dump is pumped into the client process without being held in memory.
- * These generate a dump much larger than the committed fixtures, which are all
- * under 11 KB, and check that peak memory does not follow the file size.
+ * The dump is pumped into the client process, or for SQLite read statement by
+ * statement, without ever being held in memory. These generate a dump much
+ * larger than the committed fixtures, which are all under 11 KB, and check that
+ * peak memory does not follow the file size.
  */
 function generateLargeDump(string $path, int $rows, bool $gzip = false): int
 {
@@ -68,3 +69,45 @@ it('imports a large gzipped pgsql dump without holding it in memory', function (
         DB::connection('pgsql')->statement('DROP TABLE IF EXISTS lbr_large');
     }
 })->group('pgsql');
+
+it('imports a large sqlite dump without holding it in memory', function () {
+    // SQLite has no client process: the dump is read in chunks and executed one
+    // statement at a time, so peak memory follows the widest statement.
+    $dump = tempnam(sys_get_temp_dir(), 'lbr-large-').'.sql';
+    $rows = generateLargeDump($dump, 17000);
+
+    expect(filesize($dump))->toBeGreaterThan(15 * 1024 * 1024);
+
+    try {
+        gc_collect_cycles();
+        $before = memory_get_peak_usage(true);
+
+        sqliteImporter()->importFromFile($dump);
+
+        $growth = memory_get_peak_usage(true) - $before;
+
+        expect(DB::connection('sqlite')->table('lbr_large')->count())->toBe($rows);
+        expect($growth)->toBeLessThan(4 * 1024 * 1024);
+    } finally {
+        unlink($dump);
+    }
+});
+
+it('imports a large gzipped sqlite dump without holding it in memory', function () {
+    $dump = tempnam(sys_get_temp_dir(), 'lbr-large-').'.sql.gz';
+    $rows = generateLargeDump($dump, 17000, gzip: true);
+
+    try {
+        gc_collect_cycles();
+        $before = memory_get_peak_usage(true);
+
+        sqliteImporter()->importFromFile($dump);
+
+        $growth = memory_get_peak_usage(true) - $before;
+
+        expect(DB::connection('sqlite')->table('lbr_large')->count())->toBe($rows);
+        expect($growth)->toBeLessThan(4 * 1024 * 1024);
+    } finally {
+        unlink($dump);
+    }
+});

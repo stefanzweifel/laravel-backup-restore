@@ -55,15 +55,34 @@ it('does not run a dot-command found in the dump', function (string $command) {
     }
 })->with(['.shell', '.system']);
 
-it('keeps peak memory flat while reading the dump', function () {
-    // The dump is read into memory in one piece, so this records what that
-    // costs rather than asserting the memory is not used.
-    $fixture = lbrFixture('2023-02-28-sqlite-no-compression-no-encryption.sql');
+it('names the statement that failed', function () {
+    $dump = tempnam(sys_get_temp_dir(), 'lbr-broken-').'.sql';
+    file_put_contents($dump, "CREATE TABLE lbr_probe (id int);\nINSERT INTO table_that_does_not_exist VALUES (1);\n");
 
-    $before = memory_get_peak_usage(true);
-    sqliteImporter()->importFromFile($fixture);
-    $growth = memory_get_peak_usage(true) - $before;
+    try {
+        expect(fn () => sqliteImporter()->importFromFile($dump))
+            ->toThrow(function (ImportFailed $exception) {
+                expect($exception->getMessage())
+                    ->toContain('statement 2')
+                    ->toContain('INSERT INTO table_that_does_not_exist')
+                    ->toContain('no such table');
+            });
+    } finally {
+        unlink($dump);
+    }
+});
 
-    expect($growth)->toBeLessThan(2 * 1024 * 1024);
-    expect(DB::connection('sqlite')->table('users')->count())->toBe(10);
+it('shortens a long statement in the error message', function () {
+    $dump = tempnam(sys_get_temp_dir(), 'lbr-broken-').'.sql';
+    file_put_contents($dump, "INSERT INTO nope VALUES ('".str_repeat('x', 5000)."');\n");
+
+    try {
+        expect(fn () => sqliteImporter()->importFromFile($dump))
+            ->toThrow(function (ImportFailed $exception) {
+                expect(strlen($exception->getMessage()))->toBeLessThan(1024);
+                expect($exception->getMessage())->toContain('(truncated)');
+            });
+    } finally {
+        unlink($dump);
+    }
 });
