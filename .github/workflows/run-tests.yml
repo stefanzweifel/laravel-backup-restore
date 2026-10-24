@@ -18,6 +18,10 @@ jobs:
             # prefer-lowest,
             prefer-stable,
           ]
+        # Laravel 12 raises PHP 8.6 deprecations that fail the suite.
+        exclude:
+          - php: 8.6
+            laravel: 12.*
         # The constraints below deliberately avoid "^". On Windows, composer is a
         # .bat file, so the command line goes through cmd.exe, which eats "^" as
         # its escape character: "^11.0" arrives as "11.0", an exact-version match.
