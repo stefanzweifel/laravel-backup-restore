@@ -33,8 +33,8 @@
         "laravel/pint": "^1.26",
         "nunomaduro/collision": "^8.0",
         "orchestra/testbench": "^10.8 | ^11.0",
-        "pestphp/pest": "^4.1",
-        "pestphp/pest-plugin-laravel": "^4.0",
+        "pestphp/pest": "^4.1 | ^5.0",
+        "pestphp/pest-plugin-laravel": "^4.0 | ^5.0",
         "phpstan/extension-installer": "^1.4"
     },
     "autoload": {
