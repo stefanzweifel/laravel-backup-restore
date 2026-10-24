@@ -531,6 +531,12 @@ it('stops before the download when the abort arrived while the prompts were open
     // under runningUnitTests(), hence the override.
     Signals::resolveAvailabilityUsing(fn () => true);
 
+    // PHPUnit 13 installs its own SIGINT handler that interrupts the test run.
+    // The signal registry calls the previous handler too, so the real SIGINT
+    // below would stop the run. Remove the handler while this test runs.
+    $phpunitSigintHandler = pcntl_signal_get_handler(SIGINT);
+    pcntl_signal(SIGINT, SIG_DFL);
+
     app()->bind(CheckDependenciesAction::class, fn () => new class extends CheckDependenciesAction
     {
         public function execute(string $connection): void
@@ -560,6 +566,7 @@ it('stops before the download when the abort arrived while the prompts were open
             ->assertExitCode(130);
     } finally {
         Signals::resolveAvailabilityUsing(null);
+        pcntl_signal(SIGINT, $phpunitSigintHandler);
     }
 
     expect(Storage::disk('local')->allFiles('backup-restore-temp'))->toBeEmpty();
