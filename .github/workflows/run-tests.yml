@@ -12,12 +12,16 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        php: [8.5, 8.4]
+        php: [8.6, 8.5, 8.4]
         laravel: ["13.*", "12.*"]
         stability: [
             # prefer-lowest,
             prefer-stable,
           ]
+        # Laravel 12 raises PHP 8.6 deprecations that fail the suite.
+        exclude:
+          - php: 8.6
+            laravel: 12.*
         # The constraints below deliberately avoid "^". On Windows, composer is a
         # .bat file, so the command line goes through cmd.exe, which eats "^" as
         # its escape character: "^11.0" arrives as "11.0", an exact-version match.
@@ -104,7 +108,7 @@ jobs:
       - name: Install dependencies
         run: |
           composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" "nesbot/carbon:${{ matrix.carbon }}" --no-interaction --no-update
-          composer update --${{ matrix.stability }} --prefer-dist --no-interaction
+          composer update --${{ matrix.stability }} --prefer-dist --no-interaction ${{ matrix.php == '8.6' && '--ignore-platform-req=ext-zip' || '' }}
 
       - name: List Installed Dependencies
         run: composer show -D
